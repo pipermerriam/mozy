@@ -1,0 +1,9 @@
+{% extends 'layout_wide.html' %}
+{% load thumbnail %}
+
+
+{% block content %}
+    {% thumbnail source_image.original "600" as im %}
+        <img src="{{ im.url }}">
+    {% endthumbnail %}
+{% endblock %}
