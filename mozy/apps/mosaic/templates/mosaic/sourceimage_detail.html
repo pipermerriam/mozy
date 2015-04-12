@@ -6,4 +6,5 @@
     {% thumbnail source_image.original "600" as im %}
         <img src="{{ im.url }}">
     {% endthumbnail %}
+    <a href="{% url 'mosaicimage-create' pk=source_image.pk %}">Create Mosaic Image</a>
 {% endblock %}

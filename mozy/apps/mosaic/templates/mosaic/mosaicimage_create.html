@@ -1,0 +1,10 @@
+{% extends 'layout_wide.html' %}
+{% load bootstrap3 %}
+
+
+{% block content %}
+    <form action="." method="post" enctype="multipart/form-data">
+        {% include "partials/form-as-divs.html" %}
+        <button type="submit" class="btn btn-primary">Create Mosaic Image</button>
+    </form>
+{% endblock %}

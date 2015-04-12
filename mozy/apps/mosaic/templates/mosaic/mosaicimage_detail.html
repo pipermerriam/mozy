@@ -1,0 +1,13 @@
+{% extends 'layout_wide.html' %}
+{% load thumbnail %}
+
+
+{% block content %}
+    {% for tile_row in mosaic_image.tiles_as_rows %}
+        <div>
+            {% for tile in tile_row %}
+                <img src="{{ tile.tile_image.url }}">
+            {% endfor %}
+        </div>
+    {% endfor %}
+{% endblock %}

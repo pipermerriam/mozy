@@ -41,10 +41,10 @@ def normalize_image_dimensions(image, tile_size=None):
         c_size_y = size_y - extra_y
 
         c_box = (
-            extra_x / 2,
-            extra_y / 2,
-            extra_x / 2 + c_size_x,
-            extra_y / 2 + c_size_y,
+            int(extra_x / 2),
+            int(extra_y / 2),
+            int(extra_x / 2 + c_size_x),
+            int(extra_y / 2 + c_size_y),
         )
         return image.crop(c_box)
 
