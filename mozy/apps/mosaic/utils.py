@@ -1,5 +1,7 @@
 from __future__ import division
 
+import scipy
+
 import StringIO
 
 from django.conf import settings
@@ -158,3 +160,15 @@ def convert_image_to_django_file(image):
     image.save(image_file, format='PNG')
     image_file.seek(0)
     return ContentFile(image_file.getvalue())
+
+
+def cast_image_data_to_scipy_array(image_data):
+    return scipy.array([
+        scipy.array([
+            scipy.array(rgb) for rgb in row
+        ]) for row in image_data
+    ])
+
+
+def cast_scipy_array_to_python(scipy_array):
+    return [[[rgb for rgb in pixel] for pixel in row] for row in scipy_array]

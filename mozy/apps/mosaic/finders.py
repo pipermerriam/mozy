@@ -9,12 +9,7 @@ from mozy.apps.mosaic.models import (
 
 
 def file_to_normalized_image_data(fp):
-    data = imread(fp, flatten=True)
-    # greyscale is probably wrong
-    #greyscale_data = scipy.inner(data, [299, 587, 114]) / 1000.0
-    #normalized_data = (data - data.mean()) / data.std()
-
-    #return normalized_data
+    data = imread(fp)
     return data
 
 
@@ -34,7 +29,7 @@ def load_stock_data(tile_size):
 
 def im_data_cmp_key(target_data, data):
     diff = target_data - data[0]
-    measure = sum(sum(abs(diff)))
+    measure = sum(sum(sum(abs(diff))))
     return measure
 
 

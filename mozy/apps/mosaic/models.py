@@ -6,6 +6,7 @@ import hashlib
 
 from PIL import Image
 
+from django.contrib.postgres.fields import ArrayField
 from django.db import (
     models,
     transaction,
@@ -15,6 +16,7 @@ from mozy.apps.core.utils import generic_upload_to
 from mozy.apps.core.models import Timestampable
 
 from mozy.apps.mosaic.utils import (
+    cast_image_data_to_scipy_array,
     convert_image_to_django_file,
     normalize_stock_image,
 )
@@ -65,11 +67,20 @@ class MosaicImage(Timestampable):
 
 class MosaicTile(models.Model):
     main_image = models.ForeignKey('MosaicImage', related_name='all_tiles')
+
     tile_image = models.ImageField(upload_to=generic_upload_to)
+    tile_data = ArrayField(
+        ArrayField(
+            ArrayField(
+                models.PositiveSmallIntegerField(),
+            )
+        )
+    )
 
     stock_tile_match = models.ForeignKey(
         'NormalizedStockImage', null=True, on_delete=models.SET_NULL,
     )
+    stock_tile_match_difference = models.PositiveIntegerField(null=True)
 
     upper_left_x = models.PositiveIntegerField()
     upper_left_y = models.PositiveIntegerField()
@@ -91,6 +102,10 @@ class MosaicTile(models.Model):
     @property
     def lower_right_y(self):
         return self.upper_left_y + self.main_image.tile_size
+
+    @property
+    def scipy_tile_data(self):
+        return cast_image_data_to_scipy_array(self.tile_data)
 
 
 #
@@ -149,7 +164,9 @@ class NormalizedStockImage(Timestampable):
     stock_image = models.ForeignKey('StockImage', related_name='normalized_images')
 
     image = models.ImageField(upload_to=generic_upload_to)
+
     tile_image = models.ImageField(upload_to=generic_upload_to)
+    tile_data = ArrayField(ArrayField(ArrayField(models.PositiveSmallIntegerField())))
 
     TILE_SIZE_CHOICES = MosaicImage.TILE_SIZE_CHOICES
     tile_size = models.PositiveSmallIntegerField(choices=TILE_SIZE_CHOICES)
@@ -164,7 +181,7 @@ class NormalizedStockImage(Timestampable):
         else:
             stock_image.original.file.seek(0)
         with stock_image.original.file as fp:
-            o_im = Image.open(fp)
+            o_im = Image.open(fp).convert('RGB')
             im = normalize_stock_image(o_im, tile_size=tile_size)
             instance.image.save(
                 "{0}.png".format(str(uuid.uuid4())),
@@ -179,3 +196,7 @@ class NormalizedStockImage(Timestampable):
                 convert_image_to_django_file(tile_im),
             )
         return instance
+
+    @property
+    def scipy_tile_data(self):
+        return cast_image_data_to_scipy_array(self.tile_data)
