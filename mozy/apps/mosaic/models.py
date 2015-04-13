@@ -219,3 +219,26 @@ class NormalizedStockImage(Timestampable):
     @property
     def scipy_tile_data(self):
         return cast_image_data_to_scipy_array(self.tile_data)
+
+
+class StockImageTile(Timestampable):
+    """
+    TODO: figure out the right way to do this.
+    """
+    stock_image = models.ForeignKey('NormalizedStockImage', related_name='tiles')
+
+    tile_image = models.ImageField(upload_to=generic_upload_to)
+    tile_data = ArrayField(ArrayField(ArrayField(models.PositiveSmallIntegerField())))
+
+    TILE_SIZE_CHOICES = (
+        (20, '20 pixels'),
+        (40, '40 pixels'),
+    )
+    tile_size = models.PositiveSmallIntegerField(choices=TILE_SIZE_CHOICES)
+
+    @property
+    def scipy_tile_data(self):
+        return cast_image_data_to_scipy_array(self.tile_data)
+
+    class Meta:
+        abstract = True
