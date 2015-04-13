@@ -2,6 +2,13 @@
 {% load thumbnail %}
 
 
+{% block breadcrumbs %}
+    {{ block.super }}
+    <li><a href="{% url 'sourceimage-list' %}">Images</a></li>
+    <li><a href="{% url 'sourceimage-detail' pk=mosaic_image.source_image_id %}">#{{ mosaic_image.source_image_id }}</a></li>
+    <li><a href="{% url 'mosaicimage-detail' pk=mosaic_image.pk %}">Mosaic #{{ mosaic_image.pk }}</a></li>
+{% endblock %}
+
 {% block content %}
     <div>
         <img src="{{ stock_image.stock_image.original.url }}">

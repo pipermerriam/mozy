@@ -1,8 +1,7 @@
-import uuid
-
-from PIL import Image
-
-from django.shortcuts import redirect
+from django.shortcuts import (
+    redirect,
+    get_object_or_404,
+)
 from django.core.urlresolvers import (
     reverse,
 )
@@ -21,26 +20,22 @@ from mozy.apps.mosaic.models import (
     MosaicImage,
     NormalizedStockImage,
 )
-from mozy.apps.mosaic.utils import (
-    convert_image_to_django_file,
-    normalize_source_image,
-)
 from mozy.apps.mosaic.forms import (
     SourceImageForm,
     MosaicImageForm,
 )
 from mozy.apps.mosaic.tables import (
     StockImageTable,
-    SourceImageTable,
 )
 
 
-class SourceImageListView(SingleTableMixin, ListView):
-    template_name = 'mosaic/sourceimage_create.html'
+class SourceImageListView(ListView):
+    template_name = 'mosaic/sourceimage_list.html'
     model = SourceImage
     form_class = SourceImageForm
-    table_class = SourceImageTable
-    table_pagination = {'per_page': 10}
+    context_object_name = 'source_images'
+    paginate_by = 36
+
 
 class SourceImageCreateView(CreateView):
     template_name = 'mosaic/sourceimage_create.html'
@@ -62,12 +57,21 @@ class MosaicImageCreateView(CreateView):
     template_name = 'mosaic/mosaicimage_create.html'
     form_class = MosaicImageForm
 
-    def form_valid(self, form):
-        source_image = SourceImage.objects.get(**self.kwargs)
-        instance = source_image.create_mosaic_image(**form.cleaned_data)
+    def get_source_image(self):
+        return get_object_or_404(SourceImage, **self.kwargs)
 
-        url = redirect(reverse('mosaicimage-detail', kwargs={'pk': instance.pk}))
-        import ipdb; ipdb.set_trace()
+    def get_context_data(self, **kwargs):
+        context = super(MosaicImageCreateView, self).get_context_data(**kwargs)
+        context['source_image'] = self.get_source_image()
+        return context
+
+    def form_valid(self, form):
+        source_image = self.get_source_image()
+        instance = source_image.create_mosaic_image(**form.cleaned_data)
+        # TODO: this cannot happen like this.  it's slow
+        from mozy.apps.mosaic import matcher
+        matcher.create_mosaic(instance)
+
         return redirect(reverse('mosaicimage-detail', kwargs={'pk': instance.pk}))
 
 

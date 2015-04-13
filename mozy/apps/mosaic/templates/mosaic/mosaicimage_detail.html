@@ -2,7 +2,26 @@
 {% load thumbnail %}
 
 
+{% block breadcrumbs %}
+    {{ block.super }}
+    <li><a href="{% url 'sourceimage-list' %}">Images</a></li>
+    <li><a href="{% url 'sourceimage-detail' pk=mosaic_image.source_image_id %}">#{{ mosaic_image.source_image_id }}</a></li>
+    <li><a href="{% url 'mosaicimage-detail' pk=mosaic_image.pk %}">Mosaic #{{ mosaic_image.pk }}</a></li>
+{% endblock %}
+
+
 {% block content %}
+    <div class="col-sm-6">
+        <img src="{{ mosaic_image.image.url }}" class="img-responsive center-block">
+    </div>
+    <div class="col-sm-6">
+        {% if mosaic_image.mosaic %}
+            <img src="{{ mosaic_image.mosaic.url }}" class="img-responsive center-block">
+        {% else %}
+            <p>No Mosaic Yet</p>
+        {% endif %}
+    </div>
+    {% comment %}
     {% for tile_row in mosaic_image.tiles_as_rows %}
         <div>
             {% for tile in tile_row %}
@@ -22,4 +41,5 @@
             {% endfor %}
         </div>
     {% endfor %}
+    {% endcomment %}
 {% endblock %}

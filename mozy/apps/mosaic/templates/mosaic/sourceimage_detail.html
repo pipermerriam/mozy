@@ -5,7 +5,7 @@
 {% block breadcrumbs %}
     {{ block.super }}
     <li><a href="{% url 'sourceimage-list' %}">Images</a></li>
-    <li><a href="{% url 'sourceimage-detail' pk=source_image.pk %}">Images</a></li>
+    <li>#{{ source_image.pk }}</li>
 {% endblock %}
 
 {% block content %}
@@ -22,7 +22,7 @@
             <p class="pull-right">
                 <small>
                     <a href="{% url 'mosaicimage-create' pk=source_image.pk %}" class="btn btn-primary pull-right">
-                        Create New Mosaic
+                        Make New Mosaic
                     </a>
                 </small>
             </p>

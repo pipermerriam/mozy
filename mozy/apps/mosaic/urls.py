@@ -9,7 +9,11 @@ from mozy.apps.mosaic import views
 urlpatterns = patterns(
     '',
     url(
-        r'^source-image/$', views.SourceImageCreateView.as_view(),
+        r'^source-image/$', views.SourceImageListView.as_view(),
+        name="sourceimage-list",
+    ),
+    url(
+        r'^source-image/add-new-image/$', views.SourceImageCreateView.as_view(),
         name="sourceimage-create",
     ),
     url(
