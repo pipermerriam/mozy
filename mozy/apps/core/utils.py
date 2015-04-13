@@ -10,7 +10,7 @@ def generic_upload_to(instance, filename):
     now = datetime.datetime.now()
     return os.path.join(
         instance._meta.app_label,
-        instance._meta.module_name,
+        instance._meta.model_name,
         now.strftime('%Y'),
         now.strftime('%m'),
         now.strftime('%d'),

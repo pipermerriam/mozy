@@ -31,3 +31,6 @@ rollbar==0.9.9
 
 # JSON
 django-argonauts==1.0.1
+numpy==1.9.2
+scipy==0.15.1
+django-tables2==0.16.0

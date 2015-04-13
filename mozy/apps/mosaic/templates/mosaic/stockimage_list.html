@@ -1,0 +1,10 @@
+{% extends 'layout_wide.html' %}
+{% load render_table from django_tables2 %}
+
+
+{% block content %}
+<h1>Stock Images</h1>
+    <section>    	       
+        {% render_table table %}
+    </section>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends 'layout_wide.html' %}
+{% load thumbnail %}
+
+
+{% block content %}
+    <div>
+        <img src="{{ stock_image.stock_image.original.url }}">
+    </div>
+    <div>
+        <img src="{{ stock_image.image.url }}">
+    </div>
+    <div>
+        <img src="{{ stock_image.tile_image.url }}">
+    </div>
+{% endblock %}

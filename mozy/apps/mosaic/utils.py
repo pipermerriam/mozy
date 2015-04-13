@@ -1,28 +1,33 @@
 from __future__ import division
 
+import StringIO
+
 from django.conf import settings
+from django.core.files.base import ContentFile
 
 
-def normalize_image_size(image, max_width, max_height):
+def normalize_image_size(image, max_width=None, max_height=None):
+    if max_width is None:
+        max_width = settings.MOSAIC_MAX_WIDTH
+    if max_height is None:
+        max_height = settings.MOSAIC_MAX_HEIGHT
+
     size_x, size_y = image.size
 
     scale_x = max_width / size_x if size_x > max_width else None
     scale_y = max_height / size_y if size_y > max_height else None
     # Handle larger images
     if scale_x or scale_y:
-        resized_image = image.copy()
-
         if scale_x is not None and scale_x <= scale_y:
-            resized_image.thumbnail((
+            image.thumbnail((
                 max_width,
                 max_height / scale_x,
             ))
         elif scale_y is not None:
-            resized_image.thumbnail((
+            image.thumbnail((
                 max_width / scale_y,
                 max_height,
             ))
-        return resized_image
     return image
 
 
@@ -61,8 +66,6 @@ def normalize_an_image(image, tile_size=None):
     - Width is multiple of tile_size
     - Height is multiple of tile_size
     """
-    if tile_size is None:
-        tile_size = settings.MOSAIC_DEFAULT_TILE_SIZE
     o_size_x, o_size_y = image.size
 
     # Handle too small images
@@ -73,9 +76,7 @@ def normalize_an_image(image, tile_size=None):
         ))
 
     # Handle larger images
-    downsized_image = normalize_image_size(
-        image, max_width=settings.MOSAIC_MAX_WIDTH, max_height=settings.MOSAIC_MAX_HEIGHT,
-    )
+    downsized_image = normalize_image_size(image)
 
     # Crop to multiple of tile_size
     cropped_and_downsized_image = normalize_image_dimensions(
@@ -83,6 +84,51 @@ def normalize_an_image(image, tile_size=None):
     )
 
     return cropped_and_downsized_image
+
+
+def convert_image_to_square(image):
+    size_x, size_y = image.size
+
+    if size_x > size_y:
+        return image.crop((
+            int((size_x - size_y) / 2),
+            0,
+            int((size_x - size_y) / 2 + size_y),
+            size_y,
+        ))
+    elif size_y > size_x:
+        return image.crop((
+            0,
+            0,
+            size_x,
+            size_x,
+        ))
+    else:
+        return image
+
+
+def normalize_stock_image(image, tile_size=None):
+    o_size_x, o_size_y = image.size
+
+    # Handle too small images
+    if o_size_x < settings.MOSAIC_MIN_WIDTH or o_size_y < settings.MOSAIC_MIN_HEIGHT:
+        raise ValueError("Image is too small.  Must be at least {width}x{height}".format(
+            width=settings.MOSAIC_MIN_WIDTH,
+            height=settings.MOSAIC_MIN_HEIGHT,
+        ))
+
+    # Handle larger images
+    downsized_image = normalize_image_size(image)
+
+    # Crop to multiple of tile_size
+    cropped_and_downsized_image = normalize_image_dimensions(downsized_image)
+
+    # Now crop to be square
+    cropped_and_downsized_and_squared_image = convert_image_to_square(
+        cropped_and_downsized_image,
+    )
+
+    return cropped_and_downsized_and_squared_image
 
 
 def compute_tile_boxes(size_x, size_y, tile_size):
@@ -105,3 +151,10 @@ def decompose_an_image(image, tile_size=None):
         for box
         in compute_tile_boxes(size_x=size_x, size_y=size_y, tile_size=tile_size)
     ))
+
+
+def convert_image_to_django_file(image):
+    image_file = StringIO.StringIO()
+    image.save(image_file, format='PNG')
+    image_file.seek(0)
+    return ContentFile(image_file.getvalue())

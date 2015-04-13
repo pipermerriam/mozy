@@ -19,3 +19,17 @@ landscape_image = image_fixture_factory('tests/images/test-landscape-600x450.jpg
 
 square_image = image_fixture_factory('tests/images/test-square-600x600.jpg')
 tiny_image = image_fixture_factory('test/images/test-tiny-1x1.jpg')
+
+
+@pytest.yield_fixture()
+def inmemorystorage(settings):
+    """
+    Allows for use of the `InMemoryStorage` backend such that data persists
+    between different instantiations of the storage backend.
+    """
+    import inmemorystorage
+    _filesystem = inmemorystorage.storage._filesystem
+    inmemorystorage.storage._filesystem = inmemorystorage.storage.InMemoryDir()
+    settings.INMEMORYSTORAGE_PERSIST = True
+    yield inmemorystorage.storage.InMemoryStorage()
+    inmemorystorage.storage._filesystem = _filesystem
