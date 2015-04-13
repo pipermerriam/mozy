@@ -23,7 +23,6 @@ def create_mosaic(mosaic_image):
         print "Matched tile:{0} with stock_image:{1} - {2}".format(
             tile.pk, stock_id, match_similarity,
         )
-    print "TIME", time.time() - start
     mosaic_image.compose_mosaic()
     return mosaic_image
 
