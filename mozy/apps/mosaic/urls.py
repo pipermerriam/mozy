@@ -27,10 +27,10 @@ urlpatterns = patterns(
     ),
     url(
         r'^stock-image/$', views.StockImageListView.as_view(),
-        name="mosaicimage-list",
+        name="stockimage-list",
     ),
     url(
         r'^stock-image/(?P<pk>\d+)/$', views.StockImageDetailView.as_view(),
-        name="mosaicimage-detail",
+        name="stockimage-detail",
     ),
 )

@@ -58,7 +58,7 @@ def normalize_image_dimensions(image, tile_size=None):
     return image
 
 
-def normalize_an_image(image, tile_size=None):
+def normalize_source_image(image, tile_size=None):
     """
     Takes a raw image that may be huge, or shaped funny, or something and
     forces it into a format that can be reasoned about.

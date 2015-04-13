@@ -23,7 +23,7 @@ from mozy.apps.mosaic.models import (
 )
 from mozy.apps.mosaic.utils import (
     convert_image_to_django_file,
-    normalize_an_image,
+    normalize_source_image,
 )
 from mozy.apps.mosaic.forms import (
     SourceImageForm,
@@ -31,8 +31,16 @@ from mozy.apps.mosaic.forms import (
 )
 from mozy.apps.mosaic.tables import (
     StockImageTable,
+    SourceImageTable,
 )
 
+
+class SourceImageListView(SingleTableMixin, ListView):
+    template_name = 'mosaic/sourceimage_create.html'
+    model = SourceImage
+    form_class = SourceImageForm
+    table_class = SourceImageTable
+    table_pagination = {'per_page': 10}
 
 class SourceImageCreateView(CreateView):
     template_name = 'mosaic/sourceimage_create.html'
@@ -55,17 +63,11 @@ class MosaicImageCreateView(CreateView):
     form_class = MosaicImageForm
 
     def form_valid(self, form):
-        instance = form.save(commit=False)
-        instance.source_image = SourceImage.objects.get(**self.kwargs)
-        with instance.source_image.original.file as fp:
-            o_im = Image.open(fp)
-            normalized_image = normalize_an_image(o_im)
-            instance.image.save(
-                "{0}.png".format(str(uuid.uuid4())),
-                convert_image_to_django_file(normalized_image),
-                save=True,
-            )
+        source_image = SourceImage.objects.get(**self.kwargs)
+        instance = source_image.create_mosaic_image(**form.cleaned_data)
 
+        url = redirect(reverse('mosaicimage-detail', kwargs={'pk': instance.pk}))
+        import ipdb; ipdb.set_trace()
         return redirect(reverse('mosaicimage-detail', kwargs={'pk': instance.pk}))
 
 

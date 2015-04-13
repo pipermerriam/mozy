@@ -18,6 +18,7 @@ from mozy.apps.core.models import Timestampable
 from mozy.apps.mosaic.utils import (
     cast_image_data_to_scipy_array,
     convert_image_to_django_file,
+    normalize_source_image,
     normalize_stock_image,
 )
 
@@ -25,9 +26,27 @@ from mozy.apps.mosaic.utils import (
 class SourceImage(Timestampable):
     original = models.ImageField(upload_to=generic_upload_to)
 
+    def create_mosaic_image(self, tile_size, **kwargs):
+        mosaic_image = MosaicImage(
+            source_image=self,
+            tile_size=tile_size,
+            **kwargs
+        )
+        if self.original.file.closed:
+            self.original.open()
+        with self.original.file as fp:
+            o_im = Image.open(fp)
+            normalized_image = normalize_source_image(o_im)
+            mosaic_image.image.save(
+                "{0}.png".format(str(uuid.uuid4())),
+                convert_image_to_django_file(normalized_image),
+                save=True,
+            )
+        return mosaic_image
+
 
 class MosaicImage(Timestampable):
-    source_image = models.ForeignKey('SourceImage')
+    source_image = models.ForeignKey('SourceImage', related_name='mosaic_images')
     image = models.ImageField(upload_to=generic_upload_to)
     mosaic = models.ImageField(upload_to=generic_upload_to, null=True)
 
