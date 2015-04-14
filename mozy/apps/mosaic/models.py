@@ -60,23 +60,38 @@ class MosaicImage(Timestampable):
         for _, group_items in itertools.groupby(self.all_tiles.all(), key):
             yield tuple(group_items)
 
-    def compose_mosaic(self):
+    def compose_mosaic(self, compose_tile_size=None):
+        if compose_tile_size is None:
+            compose_tile_size = self.tile_size
+
         if self.all_tiles.filter(stock_tile_match__isnull=True).exists():
             raise ValueError("Cannot compose mosaic until all tiles are matched")
-        size_x = self.image.width
-        size_y = self.image.height
+
+        num_available_tiles = self.all_tiles.filter(
+            stock_tile_match__tiles__tile_size=compose_tile_size,
+        ).distinct().count()
+
+        if self.all_tiles.count() != num_available_tiles:
+            raise ValueError(
+                "Cannot compose mosaic.  Not all matched stock images have a "
+                "tile of the right size"
+            )
+
+        num_x_tiles = self.image.width / self.tile_size
+        num_y_tiles = self.image.height / self.tile_size
+
+        size_x = num_x_tiles * compose_tile_size
+        size_y = num_y_tiles * compose_tile_size
         mosaic_im = Image.new('RGB', (size_x, size_y))
         for tile in self.all_tiles.all():
-            with tile.stock_tile_match.tile_image.file as fp:
+            stock_tile = tile.stock_tile_match.tiles.get(
+                tile_size=compose_tile_size,
+            )
+            with stock_tile.tile_image.file as fp:
                 tile_im = Image.open(fp)
                 mosaic_im.paste(
                     tile_im,
-                    (
-                        tile.upper_left_x,
-                        tile.upper_left_y,
-                        tile.upper_left_x + self.tile_size,
-                        tile.upper_left_y + self.tile_size,
-                    ),
+                    tile.get_image_box(compose_tile_size),
                 )
         self.mosaic.save(
             "{0}.png".format(str(uuid.uuid4())),
@@ -125,6 +140,16 @@ class MosaicTile(models.Model):
     @property
     def scipy_tile_data(self):
         return cast_image_data_to_scipy_array(self.tile_data)
+
+    def get_image_box(self, tile_size=None):
+        if tile_size is None:
+            tile_size = self.tile_size
+        return (
+            (self.upper_left_x / self.tile_size) * tile_size,
+            (self.upper_left_y / self.tile_size) * tile_size,
+            (self.upper_left_x / self.tile_size) * tile_size + tile_size,
+            (self.upper_left_y / self.tile_size) * tile_size + tile_size,
+        )
 
 
 #
@@ -184,35 +209,22 @@ class NormalizedStockImage(Timestampable):
 
     image = models.ImageField(upload_to=generic_upload_to)
 
-    tile_image = models.ImageField(upload_to=generic_upload_to)
-    tile_data = ArrayField(ArrayField(ArrayField(models.PositiveSmallIntegerField())))
-
-    TILE_SIZE_CHOICES = MosaicImage.TILE_SIZE_CHOICES
-    tile_size = models.PositiveSmallIntegerField(choices=TILE_SIZE_CHOICES)
-
     @classmethod
-    def create_from_stock_image(cls, stock_image, tile_size=None):
-        if tile_size is None:
-            tile_size = cls.TILE_SIZE_CHOICES[0][0]
-        instance = cls(stock_image=stock_image, tile_size=tile_size)
+    def create_from_stock_image(cls, stock_image):
+        instance = cls(stock_image=stock_image)
         if stock_image.original.file.closed:
             stock_image.original.file.open()
         else:
             stock_image.original.file.seek(0)
         with stock_image.original.file as fp:
             o_im = Image.open(fp).convert('RGB')
-            im = normalize_stock_image(o_im, tile_size=tile_size)
+            # TODO: A fixed tile size of 20 imposes some subtle constraints on
+            # generating mosaics using non-20-sized tiles.
+            im = normalize_stock_image(o_im, tile_size=20)
             instance.image.save(
                 "{0}.png".format(str(uuid.uuid4())),
                 convert_image_to_django_file(im),
-                save=False,
-            )
-            tile_im = im.copy()
-            tile_im.thumbnail((tile_size, tile_size))
-
-            instance.tile_image.save(
-                "{0}.png".format(str(uuid.uuid4())),
-                convert_image_to_django_file(tile_im),
+                save=True,
             )
         return instance
 
@@ -239,6 +251,3 @@ class StockImageTile(Timestampable):
     @property
     def scipy_tile_data(self):
         return cast_image_data_to_scipy_array(self.tile_data)
-
-    class Meta:
-        abstract = True

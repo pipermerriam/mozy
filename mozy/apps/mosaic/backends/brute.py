@@ -4,14 +4,16 @@ from mozy.apps.mosaic.utils import (
     cast_image_data_to_scipy_array,
 )
 from mozy.apps.mosaic.models import (
-    NormalizedStockImage,
+    StockImageTile,
 )
 
 
 def load_stock_data(tile_size):
     stock_data = []
 
-    qs = NormalizedStockImage.objects.values_list('pk', 'tile_data')
+    qs = StockImageTile.objects.filter(
+        tile_size=tile_size,
+    ).values_list('stock_image', 'tile_data')
     for stock_id, data in qs:
         stock_data.append(
             (
@@ -50,10 +52,10 @@ def find_tile_match(tile_data, stock_data, exclusions):
     return best_match_id, best_match
 
 
-def BruteForceTileMatcher(exclusions=None):
+def BruteForceTileMatcher(tile_size, exclusions=None):
     if exclusions is None:
         exclusions = set()
-    stock_data = load_stock_data(tile_size=20)
+    stock_data = load_stock_data(tile_size=tile_size)
 
     return type(
         'BruteForceTileMatcher',

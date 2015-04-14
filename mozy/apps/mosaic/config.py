@@ -14,7 +14,11 @@ class MosaicConfig(AppConfig):
         # Signals
         from mozy.apps.mosaic.receivers import (
             create_mosaic_tiles,
+            create_stock_tiles,
         )
         dispatch.receiver(post_save, sender='mosaic.MosaicImage')(
             create_mosaic_tiles,
+        )
+        dispatch.receiver(post_save, sender='mosaic.NormalizedStockImage')(
+            create_stock_tiles,
         )

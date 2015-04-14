@@ -8,10 +8,15 @@ from mozy.apps.mosaic.models import MosaicTile
 from multiprocessing import Pool
 
 
-def create_mosaic(mosaic_image):
-    already_used_ids = set(mosaic_image.all_tiles.values_list('stock_tile_match', flat=True))
+def create_mosaic(mosaic_image, compose_tile_size=None):
+    already_used_ids = set(
+        mosaic_image.all_tiles.values_list('stock_tile_match', flat=True)
+    )
 
-    matcher = get_mosaic_backend(settings.MOSAIC_BACKEND)(exclusions=already_used_ids)
+    matcher = get_mosaic_backend(settings.MOSAIC_BACKEND)(
+        exclusions=already_used_ids,
+        tile_size=mosaic_image.tile_size,
+    )
 
     for tile in mosaic_image.all_tiles.filter(stock_tile_match__isnull=True):
         tile_data = tile.scipy_tile_data
@@ -23,7 +28,7 @@ def create_mosaic(mosaic_image):
         print "Matched tile:{0} with stock_image:{1} - {2}".format(
             tile.pk, stock_id, match_similarity,
         )
-    mosaic_image.compose_mosaic()
+    mosaic_image.compose_mosaic(compose_tile_size=compose_tile_size)
     return mosaic_image
 
 
