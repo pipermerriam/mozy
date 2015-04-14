@@ -16,7 +16,7 @@ class MosaicConfig(AppConfig):
             create_mosaic_tiles,
             create_stock_tiles,
         )
-        dispatch.receiver(post_save, sender='mosaic.MosaicImage')(
+        dispatch.receiver(post_save, sender='mosaic.NormalizedSourceImage')(
             create_mosaic_tiles,
         )
         dispatch.receiver(post_save, sender='mosaic.NormalizedStockImage')(

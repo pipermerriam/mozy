@@ -17,12 +17,12 @@ from django_tables2 import (
 
 from mozy.apps.mosaic.models import (
     SourceImage,
-    MosaicImage,
+    NormalizedSourceImage,
     NormalizedStockImage,
 )
 from mozy.apps.mosaic.forms import (
     SourceImageForm,
-    MosaicImageForm,
+    NormalizedSourceImageForm,
 )
 from mozy.apps.mosaic.tables import (
     StockImageTable,
@@ -53,9 +53,9 @@ class SourceImageDetailView(DetailView):
 
 
 class MosaicImageCreateView(CreateView):
-    model = MosaicImage
+    model = NormalizedSourceImage
     template_name = 'mosaic/mosaicimage_create.html'
-    form_class = MosaicImageForm
+    form_class = NormalizedSourceImageForm
 
     def get_source_image(self):
         return get_object_or_404(SourceImage, **self.kwargs)
@@ -76,7 +76,7 @@ class MosaicImageCreateView(CreateView):
 
 
 class MosaicImageDetailView(DetailView):
-    model = MosaicImage
+    model = NormalizedSourceImage
     template_name = 'mosaic/mosaicimage_detail.html'
     context_object_name = 'mosaic_image'
 

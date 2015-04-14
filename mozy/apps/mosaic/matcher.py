@@ -3,7 +3,7 @@ import functools
 from django.conf import settings
 
 from mozy.apps.mosaic.backends import get_mosaic_backend
-from mozy.apps.mosaic.models import MosaicTile
+from mozy.apps.mosaic.models import SourceImageTile
 
 from multiprocessing import Pool
 
@@ -35,7 +35,7 @@ def create_mosaic(mosaic_image, compose_tile_size=None):
 def _callback(tile_id, result):
     stock_id, match_similarity = result
 
-    tile = MosaicTile.objects.get(pk=tile_id)
+    tile = SourceImageTile.objects.get(pk=tile_id)
     tile.stock_tile_match_id = stock_id
     tile.stock_tile_match_difference = match_similarity
     print "Matched tile:{0} with stock_image:{1} - {2}".format(

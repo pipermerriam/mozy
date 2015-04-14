@@ -27,7 +27,7 @@ class SourceImage(Timestampable):
     original = models.ImageField(upload_to=generic_upload_to)
 
     def create_mosaic_image(self, tile_size, **kwargs):
-        mosaic_image = MosaicImage(
+        mosaic_image = NormalizedSourceImage(
             source_image=self,
             tile_size=tile_size,
             **kwargs
@@ -45,10 +45,9 @@ class SourceImage(Timestampable):
         return mosaic_image
 
 
-class MosaicImage(Timestampable):
-    source_image = models.ForeignKey('SourceImage', related_name='mosaic_images')
+class NormalizedSourceImage(Timestampable):
+    source_image = models.ForeignKey('SourceImage', related_name='normalized_images')
     image = models.ImageField(upload_to=generic_upload_to)
-    mosaic = models.ImageField(upload_to=generic_upload_to, null=True)
 
     TILE_SIZE_CHOICES = (
         (20, '20 pixels'),
@@ -93,14 +92,19 @@ class MosaicImage(Timestampable):
                     tile_im,
                     tile.get_image_box(compose_tile_size),
                 )
-        self.mosaic.save(
+        mosaic_image = MosaicImage(
+            source_image=self,
+            tile_size=compose_tile_size,
+        )
+        mosaic_image.mosaic.save(
             "{0}.png".format(str(uuid.uuid4())),
             convert_image_to_django_file(mosaic_im),
+            save=True
         )
 
 
-class MosaicTile(models.Model):
-    main_image = models.ForeignKey('MosaicImage', related_name='all_tiles')
+class SourceImageTile(models.Model):
+    main_image = models.ForeignKey('NormalizedSourceImage', related_name='all_tiles')
 
     tile_image = models.ImageField(upload_to=generic_upload_to)
     tile_data = ArrayField(
@@ -150,6 +154,13 @@ class MosaicTile(models.Model):
             (self.upper_left_x / self.tile_size) * tile_size + tile_size,
             (self.upper_left_y / self.tile_size) * tile_size + tile_size,
         )
+
+
+class MosaicImage(Timestampable):
+    image = models.ForeignKey('NormalizedSourceImage', related_name='mosaics')
+
+    mosaic = models.ImageField(upload_to=generic_upload_to, null=True)
+    tile_size = models.PositiveSmallIntegerField()
 
 
 #

@@ -2,14 +2,14 @@ from django import forms
 
 from mozy.apps.mosaic.models import (
     SourceImage,
-    MosaicImage,
+    NormalizedSourceImage,
 )
 
 
 class SourceImageForm(forms.ModelForm):
     tile_size = forms.TypedChoiceField(
         coerce=int,
-        choices=MosaicImage.TILE_SIZE_CHOICES, required=False,
+        choices=NormalizedSourceImage.TILE_SIZE_CHOICES, required=False,
     )
 
     class Meta:
@@ -23,7 +23,7 @@ class SourceImageForm(forms.ModelForm):
         return instance
 
 
-class MosaicImageForm(forms.ModelForm):
+class NormalizedSourceImageForm(forms.ModelForm):
     class Meta:
-        model = MosaicImage
+        model = NormalizedSourceImage
         fields = ('tile_size',)

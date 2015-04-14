@@ -5,7 +5,7 @@ from scipy.misc import imread
 from PIL import Image
 
 from mozy.apps.mosaic.models import (
-    MosaicTile,
+    SourceImageTile,
     StockImageTile,
 )
 from mozy.apps.mosaic.utils import (
@@ -28,7 +28,7 @@ def create_mosaic_tiles(sender, instance, created, raw, **kwargs):
     )
 
     for box_coords, tile_image in tile_data.items():
-        tile = MosaicTile(
+        tile = SourceImageTile(
             main_image=instance,
             upper_left_x=box_coords[0],
             upper_left_y=box_coords[1],
