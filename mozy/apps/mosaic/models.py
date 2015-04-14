@@ -26,8 +26,8 @@ from mozy.apps.mosaic.utils import (
 class SourceImage(Timestampable):
     original = models.ImageField(upload_to=generic_upload_to)
 
-    def create_mosaic_image(self, tile_size, **kwargs):
-        mosaic_image = NormalizedSourceImage(
+    def create_normalize_image(self, tile_size, **kwargs):
+        normalized_image = NormalizedSourceImage(
             source_image=self,
             tile_size=tile_size,
             **kwargs
@@ -36,13 +36,13 @@ class SourceImage(Timestampable):
             self.original.open()
         with self.original.file as fp:
             o_im = Image.open(fp)
-            normalized_image = normalize_source_image(o_im)
-            mosaic_image.image.save(
+            im = normalize_source_image(o_im)
+            normalized_image.image.save(
                 "{0}.png".format(str(uuid.uuid4())),
-                convert_image_to_django_file(normalized_image),
+                convert_image_to_django_file(im),
                 save=True,
             )
-        return mosaic_image
+        return normalized_image
 
 
 class NormalizedSourceImage(Timestampable):
@@ -93,7 +93,7 @@ class NormalizedSourceImage(Timestampable):
                     tile.get_image_box(compose_tile_size),
                 )
         mosaic_image = MosaicImage(
-            source_image=self,
+            image=self,
             tile_size=compose_tile_size,
         )
         mosaic_image.mosaic.save(

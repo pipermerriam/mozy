@@ -67,7 +67,7 @@ class MosaicImageCreateView(CreateView):
 
     def form_valid(self, form):
         source_image = self.get_source_image()
-        instance = source_image.create_mosaic_image(**form.cleaned_data)
+        instance = source_image.create_normalize_image(**form.cleaned_data)
         # TODO: this cannot happen like this.  it's slow
         from mozy.apps.mosaic import matcher
         matcher.create_mosaic(instance)

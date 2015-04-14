@@ -9,7 +9,12 @@
 
 
 {% block content %}
-    <h1>Images</h1>
+    <h1>
+        Images
+        <p class="pull-right">
+            <small><a href="{% url 'sourceimage-create' %}" class="btn btn-primary">Upload new image</a></small>
+        </p>
+    </h1>
             {% for source_image in page_obj %}
                 {% if forloop.counter|divisibleby:"4" %}
                     <div class="container">
