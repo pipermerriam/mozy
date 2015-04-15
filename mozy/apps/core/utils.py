@@ -10,3 +10,6 @@ def uuid_upload_to(instance, filename):
         filename[2:4],
         filename,
     )
+
+
+generic_upload_to = uuid_upload_to
