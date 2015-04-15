@@ -18,6 +18,7 @@ from django_tables2 import (
 from mozy.apps.mosaic.models import (
     SourceImage,
     NormalizedSourceImage,
+    MosaicImage,
     NormalizedStockImage,
 )
 from mozy.apps.mosaic.forms import (
@@ -52,16 +53,16 @@ class SourceImageDetailView(DetailView):
     context_object_name = 'source_image'
 
 
-class MosaicImageCreateView(CreateView):
+class NormalizedSourceImageCreateView(CreateView):
     model = NormalizedSourceImage
-    template_name = 'mosaic/mosaicimage_create.html'
+    template_name = 'mosaic/normalizedsourceimage_create.html'
     form_class = NormalizedSourceImageForm
 
     def get_source_image(self):
         return get_object_or_404(SourceImage, **self.kwargs)
 
     def get_context_data(self, **kwargs):
-        context = super(MosaicImageCreateView, self).get_context_data(**kwargs)
+        context = super(NormalizedSourceImageCreateView, self).get_context_data(**kwargs)
         context['source_image'] = self.get_source_image()
         return context
 
@@ -72,11 +73,23 @@ class MosaicImageCreateView(CreateView):
         from mozy.apps.mosaic import matcher
         matcher.create_mosaic(instance)
 
-        return redirect(reverse('mosaicimage-detail', kwargs={'pk': instance.pk}))
+        return redirect(reverse('normalizedsourceimage-detail', kwargs={'pk': instance.pk}))
+
+
+class NormalizedSourceImageDetailView(DetailView):
+    model = NormalizedSourceImage
+    template_name = 'mosaic/normalizedsourceimage_detail.html'
+    context_object_name = 'normalized_source_image'
+
+
+class MosaicImageCreateView(CreateView):
+    model = MosaicImage
+    template_name = 'mosaic/mosaicimage_create.html'
+    context_object_name = 'mosaic_image'
 
 
 class MosaicImageDetailView(DetailView):
-    model = NormalizedSourceImage
+    model = MosaicImage
     template_name = 'mosaic/mosaicimage_detail.html'
     context_object_name = 'mosaic_image'
 

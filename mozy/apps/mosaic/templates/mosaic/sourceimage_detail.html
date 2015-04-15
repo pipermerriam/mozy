@@ -21,27 +21,29 @@
             Mosaics
             <p class="pull-right">
                 <small>
-                    <a href="{% url 'mosaicimage-create' pk=source_image.pk %}" class="btn btn-primary pull-right">
+                    <a href="{% url 'normalizedsourceimage-create' pk=source_image.pk %}" class="btn btn-primary pull-right">
                         Make New Mosaic
                     </a>
                 </small>
             </p>
         </h2>
-        {% for mosaic_image in source_image.mosaic_images.all %}
-            <div class="media">
-                <div class="media-left">
-                    <a href="{% url 'mosaicimage-detail' pk=mosaic_image.pk %}">
-                        {% thumbnail mosaic_image.mosaic "64x64" as im %}
-                            <img src="{{ im.url }}" class="media-object">
-                        {% empty %}
-                            <img src="{% static 'img/no-mosaic.jpg' %}" class="media-object">
-                        {% endthumbnail %}
-                    </a>
+        {% for normalized_source_image in source_image.normalized_images.all %}
+            {% for mosaic_image in normalized_source_image.mosaic_images.all %}
+                <div class="media">
+                    <div class="media-left">
+                        <a href="{% url 'mosaicimage-detail' pk=mosaic_image.pk %}">
+                            {% thumbnail mosaic_image.mosaic "64x64" as im %}
+                                <img src="{{ im.url }}" class="media-object">
+                            {% empty %}
+                                <img src="{% static 'img/no-mosaic.jpg' %}" class="media-object">
+                            {% endthumbnail %}
+                        </a>
+                    </div>
+                    <div class="media-body">
+                        <h4 class="media-heading"># {{ mosaic_image.pk }}</h4>
+                    </div>
                 </div>
-                <div class="media-body">
-                    <h4 class="media-heading"># {{ mosaic_image.pk }}</h4>
-                </div>
-            </div>
+            {% endfor %}
         {% endfor %}
     </div>
 {% endblock %}

@@ -12,7 +12,7 @@ from django.db import (
     transaction,
 )
 
-from mozy.apps.core.utils import generic_upload_to
+from mozy.apps.core.utils import uuid_upload_to
 from mozy.apps.core.models import Timestampable
 
 from mozy.apps.mosaic.utils import (
@@ -24,7 +24,7 @@ from mozy.apps.mosaic.utils import (
 
 
 class SourceImage(Timestampable):
-    original = models.ImageField(upload_to=generic_upload_to)
+    original = models.ImageField(upload_to=uuid_upload_to)
 
     def create_normalize_image(self, tile_size, **kwargs):
         normalized_image = NormalizedSourceImage(
@@ -47,7 +47,7 @@ class SourceImage(Timestampable):
 
 class NormalizedSourceImage(Timestampable):
     source_image = models.ForeignKey('SourceImage', related_name='normalized_images')
-    image = models.ImageField(upload_to=generic_upload_to)
+    image = models.ImageField(upload_to=uuid_upload_to)
 
     TILE_SIZE_CHOICES = (
         (20, '20 pixels'),
@@ -106,7 +106,7 @@ class NormalizedSourceImage(Timestampable):
 class SourceImageTile(models.Model):
     main_image = models.ForeignKey('NormalizedSourceImage', related_name='all_tiles')
 
-    tile_image = models.ImageField(upload_to=generic_upload_to)
+    tile_image = models.ImageField(upload_to=uuid_upload_to)
     tile_data = ArrayField(
         ArrayField(
             ArrayField(
@@ -157,9 +157,9 @@ class SourceImageTile(models.Model):
 
 
 class MosaicImage(Timestampable):
-    image = models.ForeignKey('NormalizedSourceImage', related_name='mosaics')
+    image = models.ForeignKey('NormalizedSourceImage', related_name='mosaic_images')
 
-    mosaic = models.ImageField(upload_to=generic_upload_to, null=True)
+    mosaic = models.ImageField(upload_to=uuid_upload_to, null=True)
     tile_size = models.PositiveSmallIntegerField()
 
 
@@ -171,7 +171,7 @@ class ImageSet(Timestampable):
 
 
 class StockImage(Timestampable):
-    original = models.ImageField(upload_to=generic_upload_to)
+    original = models.ImageField(upload_to=uuid_upload_to)
 
     image_hash = models.CharField(max_length=32, unique=True)
     is_invalid = models.BooleanField(default=False)
@@ -218,7 +218,7 @@ class StockImage(Timestampable):
 class NormalizedStockImage(Timestampable):
     stock_image = models.ForeignKey('StockImage', related_name='normalized_images')
 
-    image = models.ImageField(upload_to=generic_upload_to)
+    image = models.ImageField(upload_to=uuid_upload_to)
 
     @classmethod
     def create_from_stock_image(cls, stock_image):
@@ -250,7 +250,7 @@ class StockImageTile(Timestampable):
     """
     stock_image = models.ForeignKey('NormalizedStockImage', related_name='tiles')
 
-    tile_image = models.ImageField(upload_to=generic_upload_to)
+    tile_image = models.ImageField(upload_to=uuid_upload_to)
     tile_data = ArrayField(ArrayField(ArrayField(models.PositiveSmallIntegerField())))
 
     TILE_SIZE_CHOICES = (
