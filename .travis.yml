@@ -23,7 +23,6 @@ before_install:
   - conda update --yes conda
   - travis_retry conda install --yes python=$TRAVIS_PYTHON_VERSION pip numpy scipy
 install:
-  - "travis_retry conda install setuptools --upgrade"
   - "travis_retry conda install tox"
 before_script:
   - psql -c 'create database mozy;' -U postgres
