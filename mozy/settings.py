@@ -212,6 +212,9 @@ AWS_HEADERS = {
     "Cache-Control": "public, max-age=86400",
 }
 
+DEFAULT_S3_PATH = "media"
+STATIC_S3_PATH = "static"
+
 
 if DEBUG:
     TEMPLATE_LOADERS = (
