@@ -69,17 +69,7 @@ class NormalizedSourceImageCreateView(CreateView):
     def form_valid(self, form):
         source_image = self.get_source_image()
         instance = source_image.create_normalize_image(**form.cleaned_data)
-        # TODO: this cannot happen like this.  it's slow
-        from mozy.apps.mosaic import matcher
-        matcher.create_mosaic(instance)
-
         return redirect(reverse('normalizedsourceimage-detail', kwargs={'pk': instance.pk}))
-
-
-class NormalizedSourceImageDetailView(DetailView):
-    model = NormalizedSourceImage
-    template_name = 'mosaic/normalizedsourceimage_detail.html'
-    context_object_name = 'normalized_source_image'
 
 
 class MosaicImageCreateView(CreateView):

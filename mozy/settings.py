@@ -239,4 +239,4 @@ MOSAIC_MAX_HEIGHT = 800
 
 MOSAIC_DEFAULT_TILE_SIZE = 20
 
-MOSAIC_BACKEND = 'mozy.apps.mosaic.backends.brute.BruteForceTileMatcher'
+MOSAIC_BACKEND = 'mozy.apps.mosaic.backends.brute.BruteForceGoodEnoughTileMatcher'

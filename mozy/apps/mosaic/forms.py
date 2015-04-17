@@ -19,12 +19,9 @@ class SourceImageForm(forms.ModelForm):
 
     def save(self, *args, **kwargs):
         instance = super(SourceImageForm, self).save(*args, **kwargs)
-        normalized_image = instance.create_normalize_image(
+        instance.create_normalize_image(
             tile_size=self.cleaned_data['tile_size'],
         )
-        # TODO: this cannot happen like this.  it's slow
-        from mozy.apps.mosaic import matcher
-        matcher.create_mosaic(normalized_image)
         return instance
 
 

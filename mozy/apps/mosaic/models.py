@@ -191,7 +191,7 @@ class StockImage(Timestampable):
 
     @classmethod
     def load_directory(cls, path):
-        for dirpath, dirnames, filenames in os.walk(path):
+        for dirpath, _, filenames in os.walk(path):
             for filename in filenames:
                 image_path = os.path.join(dirpath, filename)
                 with open(image_path) as im:

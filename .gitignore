@@ -38,3 +38,5 @@ node_modules/
 mozy/public
 !mozy/public/static/.gitkeep
 !mozy/public/media/.gitkeep
+
+.env
