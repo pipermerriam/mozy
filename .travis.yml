@@ -1,9 +1,12 @@
 language: python
 python:
   - "2.7"
+addons:
+  postgresql: "9.3"
 env:
   global:
     - PIP_DOWNLOAD_CACHE=$HOME/.pip_cache
+    - DATABASE_URL='postgres://travis@localhost/se_tags')
   matrix:
     - TOX_ENV=py27-dj17
     - TOX_ENV=flake8
@@ -13,6 +16,8 @@ cache:
 install:
   - "travis_retry pip install setuptools --upgrade"
   - "travis_retry pip install tox"
+before_script:
+  - psql -c 'create database mozy;' -U postgres
 script:
   - tox -e $TOX_ENV
 after_script:

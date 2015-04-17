@@ -30,5 +30,4 @@ setup(
     install_requires=requirements,
     zip_safe=False,
     license="MIT",
-    scripts=['mozy/manage.py'],
 )
