@@ -40,3 +40,5 @@ mozy/public
 !mozy/public/media/.gitkeep
 
 .env
+
+*.egg-info/**
