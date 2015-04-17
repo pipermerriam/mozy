@@ -211,6 +211,7 @@ AWS_PRELOAD_METADATA = True
 AWS_HEADERS = {
     "Cache-Control": "public, max-age=86400",
 }
+AWS_S3_HOST = "s3-us-west-2.amazonaws.com"
 
 DEFAULT_S3_PATH = "media"
 STATIC_S3_PATH = "static"

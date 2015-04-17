@@ -182,9 +182,10 @@ class StockImage(Timestampable):
             image_hash = hashlib.md5(fp.read()).hexdigest()
             fp.seek(0)
             instance = cls(image_hash=image_hash)
+            extension = path.rpartition('.')[2]
             with Image.open(fp) as im:
                 instance.original.save(
-                    path,
+                    "{0}.{1}".format(uuid.uuid4(), extension),
                     convert_image_to_django_file(im),
                 )
         return instance
@@ -197,20 +198,26 @@ class StockImage(Timestampable):
                 with open(image_path) as im:
                     image_hash = hashlib.md5(im.read()).hexdigest()
                     if cls.objects.filter(image_hash=image_hash).exists():
+                        print "already exists"
                         continue
 
                     with transaction.atomic():
                         try:
                             with transaction.atomic():
                                 stock_image = cls.create_from_filepath(image_path)
-                        except IOError:
-                            stock_image.is_invalid = True
-                            stock_image.save()
+                        except IOError as exc:
+                            print "IOError", exc
+                            cls.objects.create(
+                                original=None,
+                                image_hash=image_hash,
+                                is_invalid=True,
+                            )
                             continue
 
                         try:
                             NormalizedStockImage.create_from_stock_image(stock_image)
-                        except ValueError:
+                        except ValueError as exc:
+                            print "ValueError", exc
                             stock_image.is_invalid = True
                             stock_image.save()
 
