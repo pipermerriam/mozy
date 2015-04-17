@@ -3,14 +3,12 @@
 
 from pip.download import PipSession
 from pip.req import parse_requirements
-import os
-import sys
 
 
 try:
-    from setuptools import setup
+    from setuptools import setup, find_packages
 except ImportError:
-    from distutils.core import setup
+    from distutils.core import setup, find_packages
 
 import mozy
 version = mozy.__version__
