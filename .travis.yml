@@ -4,15 +4,10 @@ python:
 addons:
   postgresql: "9.3"
 env:
-  global:
-    - PIP_DOWNLOAD_CACHE=$HOME/.pip_cache
-    - DATABASE_URL='postgres://travis@localhost/se_tags')
   matrix:
     - TOX_ENV=py27-dj17
     - TOX_ENV=flake8
-cache:
-  directories:
-    - $HOME/.pip-cache/
+cache: pip
 before_install:
   - sudo apt-get update -qq
   #- sudo apt-get install -qq libatlas-dev libatlas-base-dev liblapack-dev gfortran

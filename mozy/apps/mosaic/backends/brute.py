@@ -10,7 +10,7 @@ from mozy.apps.mosaic.models import (
 )
 
 
-def load_stock_data(tile_size):
+def load_stock_data(tile_size=20):
     stock_data = []
 
     qs = StockImageTile.objects.filter(
@@ -26,7 +26,7 @@ def load_stock_data(tile_size):
     return tuple(stock_data)
 
 
-def reset_stock_data():
+def reset_stock_data(tile_size=20):
     global STOCK_DATA
     STOCK_DATA = SimpleLazyObject(
         lambda: load_stock_data(tile_size=tile_size)
@@ -34,7 +34,7 @@ def reset_stock_data():
 
 
 STOCK_DATA = SimpleLazyObject(
-    lambda: load_stock_data(tile_size=tile_size)
+    lambda: load_stock_data()
 )
 
 
@@ -83,6 +83,7 @@ def BruteForceBestTileMatcher(tile_size, exclusions=None):
 
 # Value is derived from mean + 2 standard deviations which should be within
 # range for 95% of matches
+# NOTE: This threshold is too high.  Needs to be lower somehow.
 GOOD_ENOUGH_THRESHOLD = 47396
 
 
