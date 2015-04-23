@@ -12,13 +12,13 @@ cache: pip
 before_install:
   - pip install conda
   - conda init
-  - conda create -p $HOME/py --yes ctox pip numpy scipy "python=$TRAVIS_PYTHON_VERSION"
+  - conda create -p $HOME/py --yes pip numpy scipy "python=$TRAVIS_PYTHON_VERSION"
   - export PATH=$HOME/py/bin:$PATH
 install:
-  - ctox --version
+  - travis_retry pip install tox
 before_script:
   - psql -c 'create database mozy;' -U postgres
 script:
-  - ctox -e $TOX_ENV
+  - tox -e $TOX_ENV
 after_script:
   - cat .tox/$TOX_ENV/log/*.log
