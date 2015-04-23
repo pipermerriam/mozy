@@ -1,5 +1,5 @@
 # Django
-django>=1.7.1,<1.8.0
+django>=1.8,<1.9.0
 
 # Django Storage
 django-storages==1.1.8
@@ -32,6 +32,9 @@ rollbar==0.9.9
 # JSON
 django-argonauts==1.0.1
 numpy==1.9.2
-scipy==0.15.1
 django-tables2==0.16.0
 manifesto==0.5
+django-bootstrap3==5.3.1
+colormath==2.1.0
+networkx==1.9.1
+pybloom==1.1

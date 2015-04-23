@@ -211,6 +211,10 @@ AWS_PRELOAD_METADATA = True
 AWS_HEADERS = {
     "Cache-Control": "public, max-age=86400",
 }
+AWS_S3_HOST = excavator.env_string('AWS_S3_HOST', default='s3-us-west-2.amazonaws.com')
+
+DEFAULT_S3_PATH = "media"
+STATIC_S3_PATH = "static"
 
 
 if DEBUG:
@@ -239,4 +243,7 @@ MOSAIC_MAX_HEIGHT = 800
 
 MOSAIC_DEFAULT_TILE_SIZE = 20
 
-MOSAIC_BACKEND = 'mozy.apps.mosaic.backends.brute.BruteForceGoodEnoughTileMatcher'
+MOSAIC_BACKEND = excavator.env_string(
+    'MOSAIC_BACKEND',
+    default='mozy.apps.mosaic.backends.brute.BruteForceBestTileMatcher',
+)

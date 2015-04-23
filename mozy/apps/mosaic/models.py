@@ -16,7 +16,7 @@ from mozy.apps.core.utils import uuid_upload_to
 from mozy.apps.core.models import Timestampable
 
 from mozy.apps.mosaic.utils import (
-    cast_image_data_to_scipy_array,
+    cast_image_data_to_numpy_array,
     convert_image_to_django_file,
     normalize_source_image,
     normalize_stock_image,
@@ -142,8 +142,8 @@ class SourceImageTile(models.Model):
         return self.upper_left_y + self.main_image.tile_size
 
     @property
-    def scipy_tile_data(self):
-        return cast_image_data_to_scipy_array(self.tile_data)
+    def numpy_tile_data(self):
+        return cast_image_data_to_numpy_array(self.tile_data)
 
     def get_image_box(self, tile_size=None):
         if tile_size is None:
@@ -182,9 +182,10 @@ class StockImage(Timestampable):
             image_hash = hashlib.md5(fp.read()).hexdigest()
             fp.seek(0)
             instance = cls(image_hash=image_hash)
+            extension = path.rpartition('.')[2]
             with Image.open(fp) as im:
                 instance.original.save(
-                    path,
+                    "{0}.{1}".format(uuid.uuid4(), extension),
                     convert_image_to_django_file(im),
                 )
         return instance
@@ -197,20 +198,26 @@ class StockImage(Timestampable):
                 with open(image_path) as im:
                     image_hash = hashlib.md5(im.read()).hexdigest()
                     if cls.objects.filter(image_hash=image_hash).exists():
+                        print "already exists"
                         continue
 
                     with transaction.atomic():
                         try:
                             with transaction.atomic():
                                 stock_image = cls.create_from_filepath(image_path)
-                        except IOError:
-                            stock_image.is_invalid = True
-                            stock_image.save()
+                        except IOError as exc:
+                            print "IOError", exc
+                            cls.objects.create(
+                                original=None,
+                                image_hash=image_hash,
+                                is_invalid=True,
+                            )
                             continue
 
                         try:
                             NormalizedStockImage.create_from_stock_image(stock_image)
-                        except ValueError:
+                        except ValueError as exc:
+                            print "ValueError", exc
                             stock_image.is_invalid = True
                             stock_image.save()
 
@@ -240,8 +247,8 @@ class NormalizedStockImage(Timestampable):
         return instance
 
     @property
-    def scipy_tile_data(self):
-        return cast_image_data_to_scipy_array(self.tile_data)
+    def numpy_tile_data(self):
+        return cast_image_data_to_numpy_array(self.tile_data)
 
 
 class StockImageTile(Timestampable):
@@ -260,5 +267,5 @@ class StockImageTile(Timestampable):
     tile_size = models.PositiveSmallIntegerField(choices=TILE_SIZE_CHOICES)
 
     @property
-    def scipy_tile_data(self):
-        return cast_image_data_to_scipy_array(self.tile_data)
+    def numpy_tile_data(self):
+        return cast_image_data_to_numpy_array(self.tile_data)
