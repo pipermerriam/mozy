@@ -43,3 +43,4 @@ mozy/public
 
 *.egg-info/**
 *.sqlite3*
+backups/**
