@@ -32,6 +32,9 @@ def create_mosaic(mosaic_image, compose_tile_size=None):
 
 
 def worker():
+    """
+    Work in progress.
+    """
     while True:
         pending_work = NormalizedSourceImage.objects.filter(
             all_tiles__stock_tile_match__isnull=True,
