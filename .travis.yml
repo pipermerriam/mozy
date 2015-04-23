@@ -16,9 +16,11 @@ before_install:
   - ./miniconda.sh -b
   - export PATH=/home/travis/miniconda/bin:$PATH
   - conda update --yes conda
-  - travis_retry conda install --yes python=$TRAVIS_PYTHON_VERSION pip numpy scipy
+  - conda create --yes -n condaenv python=2.7
+  - conda install --yes -n python=$TRAVIS_PYTHON_VERSION condaenv pip
+  - source activate condaenv
 install:
-  - "travis_retry pip install tox"
+  - travis_retry pip install tox
 before_script:
   - psql -c 'create database mozy;' -U postgres
 script:
