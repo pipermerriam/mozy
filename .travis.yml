@@ -9,12 +9,8 @@ env:
     - TOX_ENV=py27-dj17
     - TOX_ENV=flake8
 cache: pip
-before_install:
-  - pip install conda
-  - conda init
-  - conda create -p $HOME/py --yes pip numpy scipy "python=$TRAVIS_PYTHON_VERSION"
-  - export PATH=$HOME/py/bin:$PATH
 install:
+  - travis_retry pip install setuptools --upgrade
   - travis_retry pip install tox
 before_script:
   - psql -c 'create database mozy;' -U postgres

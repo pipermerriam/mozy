@@ -18,7 +18,7 @@ def create_mosaic(mosaic_image, compose_tile_size=None):
     )
 
     for tile in mosaic_image.all_tiles.filter(stock_tile_match__isnull=True):
-        tile_data = tile.scipy_tile_data
+        tile_data = tile.numpy_tile_data
         stock_id, match_similarity = matcher(tile_data)
 
         tile.stock_tile_match_id = stock_id

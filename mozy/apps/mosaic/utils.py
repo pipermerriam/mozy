@@ -1,6 +1,6 @@
 from __future__ import division
 
-import scipy
+import numpy
 
 import StringIO
 
@@ -162,13 +162,24 @@ def convert_image_to_django_file(image):
     return ContentFile(image_file.getvalue())
 
 
-def cast_image_data_to_scipy_array(image_data):
-    return scipy.array([
-        scipy.array([
-            scipy.array(rgb) for rgb in row
+def cast_image_data_to_numpy_array(image_data):
+    return numpy.array([
+        numpy.array([
+            numpy.array(rgb) for rgb in row
         ]) for row in image_data
     ])
 
 
-def cast_scipy_array_to_python(scipy_array):
-    return [[[rgb for rgb in pixel] for pixel in row] for row in scipy_array]
+def cast_numpy_array_to_python(numpy_array):
+    return [[[rgb for rgb in pixel] for pixel in row] for row in numpy_array]
+
+
+def extract_pixel_data_from_image(im):
+    x_size, y_size = im.size
+    flat_pixel_data = tuple(im.getdata())
+    pixel_data = tuple((
+        tuple(flat_pixel_data[i:x_size]) for i in range(0, len(flat_pixel_data), x_size)
+    ))
+    if len(pixel_data) != y_size or not all(len(row) == x_size for row in pixel_data):
+        raise ValueError("Something went wrong")
+    return pixel_data

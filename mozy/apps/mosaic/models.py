@@ -16,7 +16,7 @@ from mozy.apps.core.utils import uuid_upload_to
 from mozy.apps.core.models import Timestampable
 
 from mozy.apps.mosaic.utils import (
-    cast_image_data_to_scipy_array,
+    cast_image_data_to_numpy_array,
     convert_image_to_django_file,
     normalize_source_image,
     normalize_stock_image,
@@ -142,8 +142,8 @@ class SourceImageTile(models.Model):
         return self.upper_left_y + self.main_image.tile_size
 
     @property
-    def scipy_tile_data(self):
-        return cast_image_data_to_scipy_array(self.tile_data)
+    def numpy_tile_data(self):
+        return cast_image_data_to_numpy_array(self.tile_data)
 
     def get_image_box(self, tile_size=None):
         if tile_size is None:
@@ -247,8 +247,8 @@ class NormalizedStockImage(Timestampable):
         return instance
 
     @property
-    def scipy_tile_data(self):
-        return cast_image_data_to_scipy_array(self.tile_data)
+    def numpy_tile_data(self):
+        return cast_image_data_to_numpy_array(self.tile_data)
 
 
 class StockImageTile(Timestampable):
@@ -267,5 +267,5 @@ class StockImageTile(Timestampable):
     tile_size = models.PositiveSmallIntegerField(choices=TILE_SIZE_CHOICES)
 
     @property
-    def scipy_tile_data(self):
-        return cast_image_data_to_scipy_array(self.tile_data)
+    def numpy_tile_data(self):
+        return cast_image_data_to_numpy_array(self.tile_data)
