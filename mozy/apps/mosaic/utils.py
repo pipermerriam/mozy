@@ -178,7 +178,7 @@ def extract_pixel_data_from_image(im):
     x_size, y_size = im.size
     flat_pixel_data = tuple(im.getdata())
     pixel_data = tuple((
-        tuple(flat_pixel_data[i:x_size]) for i in range(0, len(flat_pixel_data), x_size)
+        tuple(flat_pixel_data[i:i + x_size]) for i in range(0, len(flat_pixel_data), x_size)
     ))
     if len(pixel_data) != y_size or not all(len(row) == x_size for row in pixel_data):
         raise ValueError("Something went wrong")
