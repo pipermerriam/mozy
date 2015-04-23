@@ -12,7 +12,6 @@ cache: pip
 before_install:
   - pip install conda
   - conda init
-  - conda update --yes conda
   - conda create -p $HOME/py --yes -n condaenv pip numpy scipy "python=$TRAVIS_PYTHON_VERSION"
   - export PATH=$HOME/py/bin:$PATH
 install:
