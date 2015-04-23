@@ -101,6 +101,7 @@ class NormalizedSourceImage(Timestampable):
             convert_image_to_django_file(mosaic_im),
             save=True
         )
+        return mosaic_image
 
 
 class SourceImageTile(models.Model):

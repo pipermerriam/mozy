@@ -42,3 +42,4 @@ mozy/public
 .env
 
 *.egg-info/**
+*.sqlite3*

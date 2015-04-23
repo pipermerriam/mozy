@@ -50,6 +50,9 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',
+    # local project
+    'mozy.apps.core',
+    'mozy.apps.mosaic',
     # third party
     'rest_framework',
     's3_folder_storage',
@@ -58,11 +61,7 @@ INSTALLED_APPS = (
     'argonauts',
     'django_tables2',
     'sorl.thumbnail',
-    # local project
-    'mozy.apps.core',
-    'mozy.apps.mosaic',
-    # local apps
-    # django admin
+    'huey.djhuey',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -247,3 +246,14 @@ MOSAIC_BACKEND = excavator.env_string(
     'MOSAIC_BACKEND',
     default='mozy.apps.mosaic.backends.brute.BruteForceBestTileMatcher',
 )
+
+# Huey
+HUEY = {
+    'backend': 'huey.backends.sqlite_backend',  # required.
+    'name': 'arstarst',
+    'connection': {'location': 'huey.sqlite3'},
+    'always_eager': False,  # Defaults to False when running via manage.py run_huey
+
+    # Options to pass into the consumer when running ``manage.py run_huey``
+    'consumer_options': {'workers': 4},
+}
