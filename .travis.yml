@@ -13,9 +13,8 @@ before_install:
   - pip install conda
   - conda init
   - conda update --yes conda
-  - conda install --yes -n python=$TRAVIS_PYTHON_VERSION condaenv pip
-  - conda create --yes -n condaenv python=$TRAVIS_PYTHON_VERSION
-  - source activate condaenv
+  - conda create -p $HOME/py --yes -n condaenv pip numpy scipy "python=$TRAVIS_PYTHON_VERSION"
+  - export PATH=$HOME/py/bin:$PATH
 install:
   - travis_retry pip install tox
 before_script:
