@@ -12,7 +12,7 @@ cache: pip
 before_install:
   - pip install conda
   - conda init
-  - conda create -p $HOME/py --yes -n condaenv pip numpy scipy "python=$TRAVIS_PYTHON_VERSION"
+  - conda create -p $HOME/py --yes pip numpy scipy "python=$TRAVIS_PYTHON_VERSION"
   - export PATH=$HOME/py/bin:$PATH
 install:
   - travis_retry pip install tox
