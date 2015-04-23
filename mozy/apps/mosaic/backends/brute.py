@@ -97,7 +97,8 @@ def measure_delta_e_similarity(tile_data, stock_data):
     return n_measure
 
 
-def find_tile_match(tile_data, stock_data, exclusions, match_threshold=0, compare_fn=measure_euclidean_similarity):
+def find_tile_match(tile_data, stock_data, exclusions, match_threshold=0,
+                    compare_fn=measure_euclidean_similarity):
     best_match = SIMILARITY_MAX
     best_match_id = None
 
