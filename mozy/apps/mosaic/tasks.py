@@ -122,7 +122,11 @@ def queue_source_image_tiles_for_matching():
 @db_task()
 def match_souce_image_tiles(source_image_tile_pks):
     with Timer() as timer:
-        source_image = NormalizedSourceImage.objects.get(all_tiles__pk=source_image_tile_pks[0])
+        try:
+            source_image = NormalizedSourceImage.objects.get(all_tiles__pk=source_image_tile_pks[0])
+        except:
+            logger.info("%s", repr(source_image_tile_pks))
+            raise
 
         matcher = get_mosaic_backend()(source_image)
 
