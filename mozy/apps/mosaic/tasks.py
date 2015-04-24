@@ -93,6 +93,10 @@ def queue_source_image_tiles_for_matching():
     tiles_needing_matching = SourceImageTile.objects.filter(
         Q(status=SourceImageTile.STATUS_PENDING) |
         Q(
+            status=SourceImageTile.STATUS_QUEUED,
+            updated_at__lte=SourceImageTile.get_errored_datetime(),
+        ) |
+        Q(
             status=SourceImageTile.STATUS_MATCHING,
             updated_at__lte=SourceImageTile.get_errored_datetime(),
         )
