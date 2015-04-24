@@ -1,35 +1,49 @@
 import logging
 
-from django.conf import settings
+from django.db.models import Q
+from django.db import transaction
 
-from mozy.apps.mosaic.backends import get_mosaic_backend
+from mozy.apps.mosaic.backends import (
+    get_mosaic_backend,
+)
+from mozy.apps.mosaic.models import (
+    SourceImageTile,
+)
+from mozy.apps.mosaic.utils import (
+    cast_image_data_to_numpy_array,
+)
 
 
 logger = logging.getLogger(__file__)
 
 
 def create_mosaic(source_image, compose_tile_size=None):
-    already_used_ids = set(
-        source_image.all_tiles.values_list('stock_tile_match', flat=True)
-    )
+    """
+    A synchronous function useful for long running mosiac image generation.
+    """
+    matcher = get_mosaic_backend()(source_image)
 
-    matcher = get_mosaic_backend(settings.MOSAIC_BACKEND)(
-        exclusions=already_used_ids,
-        tile_size=source_image.tile_size,
-    )
+    tile_qs = source_image.all_tiles.filter(
+        stock_tile_match__isnull=True,
+    ).values_list('pk', 'tile_data')
 
-    tile_qs = source_image.all_tiles.filter(stock_tile_match__isnull=True)
+    for tile_pk, tile_data in tile_qs:
+        stock_id, match_similarity = matcher(cast_image_data_to_numpy_array(tile_data))
 
-    for tile in tile_qs:
-        tile_data = tile.numpy_tile_data
-        stock_id, match_similarity = matcher(tile_data)
-
-        tile.stock_tile_match_id = stock_id
-        tile.stock_tile_match_difference = match_similarity
-        tile.save()
+        with transaction.atomic():
+            SourceImageTile.objects.select_for_update().filter(
+                (
+                    Q(stock_tile_match_difference__isnull=True) |
+                    Q(stock_tile_match_difference__lt=match_similarity)
+                ),
+                Q(pk=tile_pk),
+            ).update(
+                stock_tile_match_id=stock_id,
+                stock_tile_match_difference=match_similarity,
+            )
         logger.info(
             "Matched tile:%s with stock_image:%s - %s",
-            tile.pk, stock_id, match_similarity,
+            tile_pk, stock_id, match_similarity,
         )
 
     mosaic_image = source_image.mosaic_images.filter(tile_size=compose_tile_size).first()

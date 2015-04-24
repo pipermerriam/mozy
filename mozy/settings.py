@@ -242,9 +242,13 @@ MOSAIC_MAX_HEIGHT = 800
 
 MOSAIC_DEFAULT_TILE_SIZE = 20
 
-MOSAIC_BACKEND = excavator.env_string(
-    'MOSAIC_BACKEND',
+MOSAIC_SEARCH_BACKEND = excavator.env_string(
+    'MOSAIC_SEARCH_BACKEND',
     default='mozy.apps.mosaic.backends.brute.BruteForceBestTileMatcher',
+)
+MOSAIC_STOCK_DATA_BACKEND = excavator.env_string(
+    'MOSAIC_STOCK_DATA_BACKEND',
+    default='mozy.apps.mosaic.stock_data.InMemoryStockData',
 )
 
 # Huey
@@ -267,3 +271,5 @@ if HUEY['backend'] == 'huey.backends.redis_backend':
     }
 elif HUEY['backend'] == 'huey.backends.sqlite_backend':
     HUEY['connection'] = {'location': 'huey_db.sqlite3'}
+else:
+    raise ValueError("Unknown huey backend")

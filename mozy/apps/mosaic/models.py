@@ -11,6 +11,7 @@ from django.db import (
     models,
     transaction,
 )
+from django.utils import timezone
 
 from mozy.apps.core.utils import uuid_upload_to
 from mozy.apps.core.models import Timestampable
@@ -59,9 +60,27 @@ class NormalizedSourceImage(Timestampable):
         for _, group_items in itertools.groupby(self.all_tiles.all(), key):
             yield tuple(group_items)
 
-    def compose_mosaic(self, compose_tile_size=None):
+    def get_stock_tile_hash(self):
+        """
+        Compute a hash that uniquely identifies a mosaic image based on the
+        stock tiles that it is composed of.
+        """
+        if self.all_tiles.filter(stock_tile_match__isnull=True).exists():
+            raise ValueError(
+                "Cannot compute hash for NormalizedSourceImage: {0}.  Some "
+                "tiles not matched".format(self.pk),
+            )
+        hash_str = ':'.join((
+            str(v) for v in self.all_tiles.order_by('pk').values_list('stock_tile_match', flat=True)
+        ))
+        return hashlib.md5(hash_str).hexdigest()
+
+    def compose_mosaic(self, compose_tile_size=None, mosaic_image=None):
         if compose_tile_size is None:
-            compose_tile_size = self.tile_size
+            if mosaic_image:
+                compose_tile_size = mosaic_image.tile_size
+            else:
+                compose_tile_size = self.tile_size
 
         if self.all_tiles.filter(stock_tile_match__isnull=True).exists():
             raise ValueError("Cannot compose mosaic until all tiles are matched")
@@ -76,12 +95,42 @@ class NormalizedSourceImage(Timestampable):
                 "tile of the right size"
             )
 
+        stock_tile_hash = self.get_stock_tile_hash()
+        if mosaic_image:
+            if mosaic_image.tile_size != compose_tile_size:
+                raise ValueError(
+                    "Tile size: {0} != Compose size: {1} for "
+                    "NormalizedSourceImage: {2} and MosaicImage: {3}".format(
+                        mosaic_image.tile_size, compose_tile_size,
+                        self.pk, mosaic_image.pk,
+                    )
+                )
+        else:
+            try:
+                mosaic_image = self.mosaic_images.get(
+                    tile_size=compose_tile_size,
+                    stock_tile_hash=stock_tile_hash,
+                )
+                if not mosaic_image.is_pending and not mosaic_image.is_errored:
+                    raise ValueError(
+                        "Cannot compose mosaic for NormalizedSourceImage: {0}. "
+                        "Image is neither pending nor is it errored".format(self.pk)
+                    )
+            except MosaicImage.DoesNotExist:
+                mosaic_image = self.mosaic_images.create(
+                    tile_size=compose_tile_size,
+                    stock_tile_hash=stock_tile_hash,
+                    status=MosaicImage.STATUS_COMPOSING,
+                )
+
         num_x_tiles = self.image.width / self.tile_size
         num_y_tiles = self.image.height / self.tile_size
 
         size_x = num_x_tiles * compose_tile_size
         size_y = num_y_tiles * compose_tile_size
+
         mosaic_im = Image.new('RGB', (size_x, size_y))
+
         for tile in self.all_tiles.all():
             stock_tile = tile.stock_tile_match.tiles.get(
                 tile_size=compose_tile_size,
@@ -92,10 +141,6 @@ class NormalizedSourceImage(Timestampable):
                     tile_im,
                     tile.get_image_box(compose_tile_size),
                 )
-        mosaic_image = MosaicImage(
-            image=self,
-            tile_size=compose_tile_size,
-        )
         mosaic_image.mosaic.save(
             "{0}.png".format(str(uuid.uuid4())),
             convert_image_to_django_file(mosaic_im),
@@ -162,6 +207,44 @@ class MosaicImage(Timestampable):
 
     mosaic = models.ImageField(upload_to=uuid_upload_to, null=True)
     tile_size = models.PositiveSmallIntegerField()
+
+    STATUS_PENDING = 'pending'
+    STATUS_COMPOSING = 'composing'
+    STATUS_COMPLETE = 'complete'
+    STATUS_CHOICES = (
+        (STATUS_PENDING, 'Pending'),
+        (STATUS_COMPOSING, 'Composing'),
+        (STATUS_COMPLETE, 'Complete'),
+    )
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES)
+    stock_tiles_hash = models.CharField(max_length=255)
+
+    class Meta:
+        unique_together = (
+            ('image', 'tile_size', 'stock_tiles_hash'),
+        )
+
+    @classmethod
+    def get_errored_datetime(cls):
+        return timezone.now() - timezone.timedelta(hours=1)
+
+    @property
+    def is_pending(self):
+        return self.status == self.STATUS_PENDING
+
+    @property
+    def is_composing(self):
+        return self.status == self.STATUS_COMPOSING
+
+    @property
+    def is_complete(self):
+        return self.status == self.STATUS_COMPLETE
+
+    @property
+    def is_errored(self):
+        if self.is_composing and self.updated_at <= self.get_errored_datetime():
+            return True
+        return False
 
 
 #
