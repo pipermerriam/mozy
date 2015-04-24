@@ -215,6 +215,16 @@ AWS_S3_HOST = excavator.env_string('AWS_S3_HOST', default='s3-us-west-2.amazonaw
 DEFAULT_S3_PATH = "media"
 STATIC_S3_PATH = "static"
 
+# Boto config
+AWS_REDUCED_REDUNDANCY = True
+AWS_QUERYSTRING_AUTH = False
+AWS_S3_FILE_OVERWRITE = True
+AWS_S3_SECURE_URLS = True
+AWS_IS_GZIPPED = False
+AWS_PRELOAD_METADATA = True
+AWS_HEADERS = {
+    "Cache-Control": "public, max-age=86400",
+}
 
 if DEBUG:
     TEMPLATE_LOADERS = (
