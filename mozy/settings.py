@@ -59,6 +59,7 @@ INSTALLED_APPS = (
     'pipeline',
     'bootstrap3',
     'argonauts',
+    'manifesto',
     'django_tables2',
     'sorl.thumbnail',
     'huey.djhuey',
