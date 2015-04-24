@@ -56,11 +56,18 @@
             {% empty %}
                 <div class="media">
                     <div class="media-left">
+                        {% comment %}
                         {% thumbnail normalized_source_image.image "64x64" as im %}
                             <img src="{{ im.url }}" class="media-object">
                         {% empty %}
                             <img src="{% static 'img/no-mosaic.jpg' %}" class="media-object">
                         {% endthumbnail %}
+                        {% endcomment %}
+                        {% if normalized_source_image.image %}
+                            <img src="{{ normalized_source_image.image.url }}" class="media-object">
+                        {% else %}
+                            <img src="{% static 'img/no-mosaic.jpg' %}" class="media-object">
+                        {% endif %}
                     </div>
                     <div class="media-body">
                         <h4 class="media-heading">Mosaic Generating</h4>
