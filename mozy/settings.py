@@ -271,5 +271,14 @@ if HUEY['backend'] == 'huey.backends.redis_backend':
     }
 elif HUEY['backend'] == 'huey.backends.sqlite_backend':
     HUEY['connection'] = {'location': 'huey_db.sqlite3'}
+elif HUEY['backend'] == 'huey.backends.rabbitmq_backend':
+    HUEY['connection'] = {
+        'host': excavator.env_string('HUEY_CONNECTION_HOST', default='localhost'),
+        'port': excavator.env_int('HUEY_CONNECTION_PORT', default=6379),
+        'username': excavator.env_string('HUEY_CONNECTION_USERNAME', default=None),
+        'password': excavator.env_string('HUEY_CONNECTION_PASSWORD', default=None),
+        'vhost': excavator.env_string('HUEY_CONNECTION_VHOST', default=None),
+        'ssl': excavator.env_bool('HUEY_CONNECTION_SSL', default=False),
+    }
 else:
     raise ValueError("Unknown huey backend")
