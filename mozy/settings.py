@@ -250,12 +250,7 @@ MOSAIC_BACKEND = excavator.env_string(
 # Huey
 HUEY = {
     'backend': excavator.env_string('HUEY_BACKEND', default='huey.backends.sqlite_backend'),
-    'name': excavator.env_string('HUEY_NAME', default='mozy-heroku-prod'),
-    'connection': {
-        'host': excavator.env_string('HUEY_CONNECTION_HOST', default='localhost'),
-        'port': excavator.env_int('HUEY_CONNECTION_PORT', default=6379),
-        'password': excavator.env_string('HUEY_CONNECTION_PASSWORD', default=None),
-    },
+    'name': excavator.env_string('HUEY_NAME', default='mozy_dev'),
     # Defaults to False when running via manage.py run_huey
     'always_eager': excavator.env_bool('HUEY_ALWAYS_EAGER', default=False),
     # Options to pass into the consumer when running ``manage.py run_huey``
@@ -263,3 +258,12 @@ HUEY = {
         'workers': excavator.env_int('HUEY_NUM_WORKERS', default=4),
     },
 }
+
+if HUEY['backend'] == 'huey.backends.redis_backend':
+    HUEY['connection'] = {
+        'host': excavator.env_string('HUEY_CONNECTION_HOST', default='localhost'),
+        'port': excavator.env_int('HUEY_CONNECTION_PORT', default=6379),
+        'password': excavator.env_string('HUEY_CONNECTION_PASSWORD', default=None),
+    }
+elif HUEY['backend'] == 'huey.backends.sqlite_backend':
+    HUEY['connection'] = {'location': 'huey_db.sqlite3'}

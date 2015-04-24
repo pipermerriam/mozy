@@ -20,7 +20,7 @@ from mozy.apps.mosaic.utils import (
     convert_image_to_django_file,
     extract_pixel_data_from_image,
 )
-from mozy.apps.mosaic import matcher
+from mozy.apps.mosaic.matchers import bulk
 
 
 @db_task()
@@ -70,4 +70,4 @@ def match_source_image_tiles(source_image_pk):
     Work in progress.
     """
     source_image = NormalizedSourceImage.objects.get(pk=source_image_pk)
-    matcher.create_mosaic(source_image)
+    bulk.create_mosaic(source_image)
