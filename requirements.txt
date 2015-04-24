@@ -27,6 +27,10 @@ dj-database-url==0.3.0
 django-cache-url==0.8.0
 python-dotenv==0.1.0
 
+# ipython
+readline==6.2.4.1
+ipython==1.2.1
+
 # Monitoring
 rollbar==0.9.9
 
