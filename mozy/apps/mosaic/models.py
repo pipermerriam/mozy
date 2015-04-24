@@ -149,7 +149,7 @@ class NormalizedSourceImage(Timestampable):
         return mosaic_image
 
 
-class SourceImageTile(models.Model):
+class SourceImageTile(Timestampable):
     main_image = models.ForeignKey('NormalizedSourceImage', related_name='all_tiles')
 
     tile_image = models.ImageField(upload_to=uuid_upload_to)
@@ -160,6 +160,18 @@ class SourceImageTile(models.Model):
             )
         )
     )
+
+    STATUS_PENDING = 'pending'
+    STATUS_QUEUED = 'queud'
+    STATUS_MATCHING = 'matching'
+    STATUS_MATCHED = 'matched'
+    STATUS_CHOICES = (
+        (STATUS_PENDING, 'Pending'),
+        (STATUS_QUEUED, 'Queued'),
+        (STATUS_MATCHING, 'Matching'),
+        (STATUS_MATCHED, 'Matched'),
+    )
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES)
 
     stock_tile_match = models.ForeignKey(
         'NormalizedStockImage', null=True, on_delete=models.SET_NULL,
@@ -174,6 +186,10 @@ class SourceImageTile(models.Model):
             ('main_image', 'upper_left_x', 'upper_left_y'),
         )
         ordering = ('upper_left_y', 'upper_left_x')
+
+    @classmethod
+    def get_errored_datetime(cls):
+        return timezone.now() - timezone.timedelta(hours=2)
 
     @property
     def tile_size(self):

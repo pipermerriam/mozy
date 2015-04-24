@@ -1,5 +1,7 @@
 import uuid
 import logging
+import operator
+import itertools
 
 from contexttimer import Timer
 
@@ -79,24 +81,42 @@ def create_source_image_tiles(source_image_pk):
         timer.elapsed,
         source_image_pk,
     )
-
-    if not source_image.mosaic_images.exists():
-        queue_source_image_tile_tasks(source_image_pk)
+    # go ahead and trigger tile matching
+    queue_source_image_tiles_for_matching()
 
 
 MATCH_BATCH_SIZE = 100
 
 
-@db_task()
-def queue_source_image_tile_tasks(source_image_pk):
-    """
-    Queues tasks to match the source image tiles with stock image tiles.
-    """
-    source_image = NormalizedSourceImage.objects.get(pk=source_image_pk)
-    tile_qs = source_image.all_tiles.order_by('pk').values_list('pk', flat=True)
-    for i in range(0, tile_qs.count(), MATCH_BATCH_SIZE):
-        tile_pks = tuple(tile_qs[i:i + MATCH_BATCH_SIZE])
-        match_souce_image_tiles(tile_pks)
+@periodic_task(crontab(minute='*/5'))
+def queue_source_image_tiles_for_matching():
+    tiles_needing_matching = SourceImageTile.objects.filter(
+        Q(status=SourceImageTile.STATUS_PENDING) |
+        Q(
+            status=SourceImageTile.STATUS_MATCHING,
+            updated_at__lte=SourceImageTile.get_errored_datetime(),
+        )
+    ).distinct().order_by('main_image', 'pk')
+
+    tile_data = tuple(tiles_needing_matching.values_list('main_image', 'pk'))
+
+    with transaction.atomic():
+        tiles_needing_matching.select_for_update().update(
+            status=SourceImageTile.STATUS_QUEUED,
+            updated_at=timezone.now(),
+        )
+
+    key_fn = operator.itemgetter(0)
+
+    for _, tile_pks_group in itertools.groupby(tile_data, key_fn):
+        # extract the tile pks
+        tile_pks = zip(*tile_pks_group)[1]
+
+        for i in range(0, len(tile_pks), MATCH_BATCH_SIZE):
+            match_souce_image_tiles(tile_pks[i:i + MATCH_BATCH_SIZE])
+    logger.info(
+        "Enqueued %s SourceImageTile instances for matching", len(tile_data)
+    )
 
 
 @db_task()
@@ -140,7 +160,7 @@ def match_souce_image_tiles(source_image_tile_pks):
     )
 
 
-@periodic_task(crontab(minute='*'))
+@periodic_task(crontab(minute='*/5'))
 def create_pending_mosaics():
     """
     Look for any NormalizedSourceImage instances that are ready for mosaic
@@ -174,12 +194,15 @@ def queue_mosaic_images_for_composition():
             updated_at__lte=MosaicImage.get_errored_datetime(),
         )
     ).distinct()
+
+    mosaic_image_pks = tuple(mosaic_images_to_queue.values_list('pk', flat=True))
+
     with transaction.atomic():
         mosaic_images_to_queue.select_for_update().update(
             status=MosaicImage.STATUS_PENDING,
             updated_at=timezone.now(),
         )
-    for mosaic_image_pk in mosaic_images_to_queue.values_list('pk', flat=True):
+    for mosaic_image_pk in mosaic_image_pks:
         compose_mosaic_image(mosaic_image_pk)
 
 
