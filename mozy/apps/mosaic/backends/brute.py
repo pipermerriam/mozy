@@ -1,5 +1,6 @@
 import functools
 import excavator
+import collections
 
 from mozy.apps.mosaic.stock_data import (
     get_stock_data_backend,
@@ -13,27 +14,36 @@ from mozy.apps.mosaic.exclusions import (
 )
 
 
-def find_tile_match(tile_data, stock_data, exclusions, match_threshold=0,
-                    compare_fn=measure_diff_similarity):
-    best_match = SIMILARITY_MAX
-    best_match_id = None
+def find_tile_matches(tile_data_array, stock_data, exclusions, match_threshold=0,
+                      compare_fn=measure_diff_similarity):
+    best_matches = collections.defaultdict(lambda: SIMILARITY_MAX)
+    best_match_ids = {}
+    found_matches = set()
 
     for data, stock_id in stock_data:
-        if stock_id in exclusions:
-            continue
+        for tile_id, tile_data in tile_data_array:
+            if tile_id in found_matches:
+                continue
+            if (tile_id, stock_id) in exclusions:
+                continue
 
-        similarity = compare_fn(tile_data, data)
+            similarity = compare_fn(tile_data, data)
+            best_match = best_matches[tile_id]
 
-        if similarity < best_match:
-            best_match = similarity
-            best_match_id = stock_id
+            if similarity < best_match:
+                best_matches[tile_id] = similarity
+                best_match_ids[tile_id] = stock_id
 
-        if similarity <= match_threshold:
-            break
+            if similarity <= match_threshold:
+                found_matches.add(tile_id)
 
-    exclusions.add(best_match_id)
+    for tile_id, stock_id in best_match_ids.items():
+        exclusions.add((tile_id, stock_id))
 
-    return best_match_id, best_match
+    return tuple((
+        (tile_id, stock_id, best_matches[tile_id])
+        for tile_id, stock_id in best_match_ids.items()
+    ))
 
 
 def BruteForceBestTileMatcher(source_image):
@@ -48,8 +58,9 @@ def BruteForceBestTileMatcher(source_image):
     )
 
     return functools.partial(
-        find_tile_match,
+        find_tile_matches,
         stock_data=stock_data,
         exclusions=exclusions,
         match_threshold=match_threshold,
+        compare_fn=measure_diff_similarity,
     )

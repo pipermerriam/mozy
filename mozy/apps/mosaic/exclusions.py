@@ -11,13 +11,17 @@ class StockTileExclusions(object):
             initial_capacity=source_image.all_tiles.count(),
             error_rate=0.0001,  # 1 in 10,000
         )
-        for existing_matche_id in source_image.all_tiles.values_list('stock_tile_match', flat=True):
-            self.bloom_filter.add(existing_matche_id)
+        existing_matches = source_image.all_tiles.values_list('pk', 'stock_tile_match')
+        for tile_id, existing_match_id in existing_matches:
+            self.bloom_filter.add((tile_id, existing_match_id))
 
     def __contains__(self, key):
         if key in self.bloom_filter:
             return True
-        elif self.source_image.all_tiles.filter(stock_tile_match_id=key).exists():
-            self.bloom_filter.add(key)
+        elif self.source_image.all_tiles.filter(stock_tile_match_id=key[1]).exists():
+            self.add(key)
             return True
         return False
+
+    def add(self, key):
+        self.bloom_filter.add(key)

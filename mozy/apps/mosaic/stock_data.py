@@ -1,3 +1,5 @@
+import excavator
+
 from django.conf import settings
 from django.utils.module_loading import import_string
 
@@ -23,13 +25,16 @@ class BaseStockDataBackend(object):
         raise NotImplementedError("Subclasses must implement an iter method")
 
 
+DB_CHUNK_SIZE = excavator.env_int('STOCK_DATA_CHUNK_SIZE', default=2000)
+
+
 class InMemoryStockDataBackend(BaseStockDataBackend):
     """
     Fully loads the stock data into memory.
     """
     def __init__(self, chunk_size=None):
         if chunk_size is None:
-            chunk_size = 500
+            chunk_size = DB_CHUNK_SIZE
         self.chunk_size = chunk_size
         self._stock_data = []
 
@@ -58,7 +63,7 @@ class InMemoryStockDataBackend(BaseStockDataBackend):
 class LowMemoryStockDataBackend(BaseStockDataBackend):
     def __init__(self, chunk_size=None):
         if chunk_size is None:
-            chunk_size = 1000
+            chunk_size = DB_CHUNK_SIZE
         self.chunk_size = chunk_size
 
     def __iter__(self):

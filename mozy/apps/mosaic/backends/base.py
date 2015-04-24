@@ -1,5 +1,5 @@
 class BaseMosaicTileMatcher(object):
-    def find_tile_match(self, tile_data):
+    def find_tile_matches(self, tile_data_array):
         """
         Stub tile matching API
         """

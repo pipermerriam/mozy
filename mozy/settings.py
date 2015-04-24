@@ -259,7 +259,7 @@ HUEY = {
     'always_eager': excavator.env_bool('HUEY_ALWAYS_EAGER', default=False),
     # Options to pass into the consumer when running ``manage.py run_huey``
     'consumer_options': {
-        'workers': excavator.env_int('HUEY_NUM_WORKERS', default=4),
+        'workers': excavator.env_int('HUEY_NUM_WORKERS', default=1),
     },
 }
 
