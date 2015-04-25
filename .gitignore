@@ -44,3 +44,8 @@ mozy/public
 *.egg-info/**
 *.sqlite3*
 backups/**
+
+# Docker
+Dockerfile
+.env_docker
+smart-acrobat-92602/*
