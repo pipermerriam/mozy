@@ -369,3 +369,59 @@ class StockImageTile(Timestampable):
     @property
     def numpy_tile_data(self):
         return cast_image_data_to_numpy_array(self.tile_data)
+
+
+class Lineage(Timestampable):
+    k = models.PositiveIntegerField()
+
+    def create_next_generation(self):
+        last_generation = self.generations.last()
+        if last_generation:
+            next_index = last_generation.index + 1
+        else:
+            next_index = 0
+        self.generations.create(index=next_index)
+
+
+class Generation(Timestampable):
+    lineage = models.ForeignKey('Lineage', related_name='generations')
+    index = models.PositiveIntegerField()
+
+    def create_groups(self):
+        if self.groups.exists():
+            for group in self.groups.all():
+                self.groups.create(
+                    parent=group,
+                    center=group.get_actual_center(),
+                )
+        else:
+            centers = StockImageTile.objects.order_by('?').values_list(
+                'tile_data', flat=True,
+            )[:self.lineage.k]
+            for center in centers:
+                self.groups.create(
+                    center=center,
+                )
+
+    class Meta:
+        unique_together = (
+            ('lineage', 'index')
+        )
+        ordering = ('index',)
+
+
+class Group(Timestampable):
+    generation = models.ForeignKey('Generation', related_name='groups')
+    parent = models.OneToOneField('self', related_name='child')
+    stock_images = models.ManyToManyField('StockImageTile', related_name='groups')
+
+    center = ArrayField(
+        ArrayField(ArrayField(models.PositiveSmallIntegerField())),
+    )
+
+    @property
+    def numpy_center(self):
+        return cast_image_data_to_numpy_array(self.center)
+
+    def get_actual_center(self):
+        import ipdb; ipdb.set_trace()
