@@ -1,8 +1,10 @@
+import numpy
 import itertools
 import os
 import operator
 import uuid
 import hashlib
+import functools
 
 from PIL import Image
 
@@ -18,6 +20,7 @@ from mozy.apps.core.models import Timestampable
 
 from mozy.apps.mosaic.utils import (
     cast_image_data_to_numpy_array,
+    cast_numpy_array_to_python,
     convert_image_to_django_file,
     normalize_source_image,
     normalize_stock_image,
@@ -380,7 +383,24 @@ class Lineage(Timestampable):
             next_index = last_generation.index + 1
         else:
             next_index = 0
-        self.generations.create(index=next_index)
+        return self.generations.create(index=next_index)
+
+    def generate(self):
+        if not self.generations.exists():
+            generation = self.create_next_generation()
+            print "Created Generation #{0}".format(generation.index)
+        else:
+            generation = self.generations.last()
+            print "Resuming Generation #{0}".format(generation.index)
+
+        while True:
+            if not generation.groups.exists():
+                generation.create_groups()
+                print "Created Generation #{0} groups".format(generation.index)
+            generation.classify_stock_data()
+            print "Finished classifying stock data for generation #{0}".format(generation.index)
+            generation = self.create_next_generation()
+            print "Created Generation #", generation.index
 
 
 class Generation(Timestampable):
@@ -388,20 +408,76 @@ class Generation(Timestampable):
     index = models.PositiveIntegerField()
 
     def create_groups(self):
-        if self.groups.exists():
-            for group in self.groups.all():
+        previous_generation = self.lineage.generations.filter(
+            index__lt=self.index,
+        ).order_by('-index').first()
+        if previous_generation:
+            total_stock_tiles = StockImageTile.objects.filter(tile_size=20).count()
+            accounted_for_tiles = StockImageTile.objects.filter(
+                groups__generation=previous_generation,
+                tile_size=20,
+            ).count()
+            if accounted_for_tiles != total_stock_tiles:
+                raise ValueError("Not all tiles matched")
+            for group in previous_generation.groups.filter(child__isnull=True):
+                if group.stock_tiles.exists():
+                    center = group.get_actual_center()
+                else:
+                    center = StockImageTile.objects.filter(
+                        tile_size=20,
+                    ).order_by('?')[0].tile_data
                 self.groups.create(
                     parent=group,
-                    center=group.get_actual_center(),
+                    center=center,
                 )
         else:
-            centers = StockImageTile.objects.order_by('?').values_list(
+            centers = StockImageTile.objects.filter(
+                tile_size=20,
+            ).order_by('?').values_list(
                 'tile_data', flat=True,
             )[:self.lineage.k]
             for center in centers:
                 self.groups.create(
                     center=center,
                 )
+
+    def classify_stock_data(self):
+        """
+        Loop over the stock tile database and group the images based on this
+        generation's center points.
+        """
+        from mozy.apps.mosaic.stock_data import (
+            InMemoryGroupDataBackend,
+        )
+        from mozy.apps.mosaic.exclusions import DummyExclusions
+        from mozy.apps.mosaic.backends.brute import find_tile_matches
+
+        group_data = InMemoryGroupDataBackend(generation=self)
+        exclusions = DummyExclusions()
+
+        matcher = functools.partial(
+            find_tile_matches,
+            stock_data=group_data,
+            exclusions=exclusions,
+            match_threshold=0,
+        )
+
+        tile_qs = StockImageTile.objects.exclude(
+            groups__generation=self,
+        ).filter(
+            tile_size=20,
+        ).values_list('pk', 'tile_data')
+
+        for tile_pk, tile_data in tile_qs:
+            match_data = matcher((
+                (tile_pk, cast_image_data_to_numpy_array(tile_data)),
+            ))
+            stock_tile_pk, group_pk, difference = match_data[0]
+            TileGroup.objects.create(
+                stockimagetile_id=stock_tile_pk,
+                group_id=group_pk,
+                difference=difference,
+            )
 
     class Meta:
         unique_together = (
@@ -410,10 +486,23 @@ class Generation(Timestampable):
         ordering = ('index',)
 
 
+class TileGroup(models.Model):
+    group = models.ForeignKey('Group')
+    stockimagetile = models.ForeignKey('StockImageTile')
+    difference = models.PositiveIntegerField()
+
+    class Meta:
+        unique_together = (
+            ('group', 'stockimagetile'),
+        )
+
+
 class Group(Timestampable):
     generation = models.ForeignKey('Generation', related_name='groups')
-    parent = models.OneToOneField('self', related_name='child')
-    stock_images = models.ManyToManyField('StockImageTile', related_name='groups')
+    parent = models.OneToOneField('self', related_name='child', null=True)
+    stock_tiles = models.ManyToManyField(
+        'StockImageTile', related_name='groups', through='TileGroup',
+    )
 
     center = ArrayField(
         ArrayField(ArrayField(models.PositiveSmallIntegerField())),
@@ -424,4 +513,7 @@ class Group(Timestampable):
         return cast_image_data_to_numpy_array(self.center)
 
     def get_actual_center(self):
-        import ipdb; ipdb.set_trace()
+        return cast_numpy_array_to_python(numpy.mean(tuple((
+            cast_image_data_to_numpy_array(tile_data)
+            for tile_data in self.stock_tiles.values_list('tile_data', flat=True)
+        )), axis=0))

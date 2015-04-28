@@ -25,3 +25,14 @@ class StockTileExclusions(object):
 
     def add(self, key):
         self.bloom_filter.add(key)
+
+
+class DummyExclusions(object):
+    """
+    object which always returns false to exclusions checks.
+    """
+    def __contains__(self, key):
+        return False
+
+    def add(self, key):
+        pass
