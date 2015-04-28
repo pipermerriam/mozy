@@ -2,6 +2,9 @@ import collections
 import itertools
 import operator
 import functools
+import logging
+
+from contexttimer import Timer
 
 import excavator
 
@@ -24,6 +27,9 @@ from mozy.apps.mosaic.exclusions import (
 from mozy.apps.mosaic.stock_data import (
     InMemoryGroupDataBackend,
 )
+
+
+logger = logging.getLogger(__file__)
 
 
 def find_k_means_groups(tile_data_array, group_data,
@@ -113,10 +119,15 @@ K_MEANS_GENERATION_ID = excavator.env_int('K_MEANS_GENERATION_ID', default=37)
 
 
 def get_group_data():
-    generation = Generation.objects.get(pk=K_MEANS_GENERATION_ID)
-    return tuple(generation.groups.order_by(
-        'pk',
-    ).values_list('pk', 'center'))
+    with Timer() as timer:
+        generation = Generation.objects.get(pk=K_MEANS_GENERATION_ID)
+        return tuple(generation.groups.order_by(
+            'pk',
+        ).values_list('pk', 'center'))
+    logger.info(
+        "Took %s to load group data",
+        timer.elapsed,
+    )
 
 
 GROUP_DATA = SimpleLazyObject(get_group_data)
