@@ -19,7 +19,11 @@ SIMILARITY_MAX = 2147483647
 
 def normalize_measure(value, maximum):
     if value > maximum:
-        raise ValueError("Cannot normalize a value above the maximum")
+        raise ValueError(
+            "Cannot normalize a value above the maximum. {0} > {1}".format(
+                value, maximum,
+            )
+        )
     return int(value * SIMILARITY_MAX / maximum)
 
 
