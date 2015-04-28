@@ -28,7 +28,11 @@ def create_mosaic(source_image, compose_tile_size=None):
     ).values_list('pk', 'tile_data')
 
     for tile_pk, tile_data in tile_qs:
-        stock_id, match_similarity = matcher(cast_image_data_to_numpy_array(tile_data))
+        stock_id, match_similarity = matcher(
+            tuple([
+                (tile_pk, cast_image_data_to_numpy_array(tile_data))
+            ]),
+        )
 
         with transaction.atomic():
             SourceImageTile.objects.select_for_update().filter(

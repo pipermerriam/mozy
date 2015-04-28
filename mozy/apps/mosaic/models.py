@@ -112,7 +112,7 @@ class NormalizedSourceImage(Timestampable):
             try:
                 mosaic_image = self.mosaic_images.get(
                     tile_size=compose_tile_size,
-                    stock_tile_hash=stock_tile_hash,
+                    stock_tiles_hash=stock_tile_hash,
                 )
                 if not mosaic_image.is_pending and not mosaic_image.is_errored:
                     raise ValueError(
@@ -122,7 +122,7 @@ class NormalizedSourceImage(Timestampable):
             except MosaicImage.DoesNotExist:
                 mosaic_image = self.mosaic_images.create(
                     tile_size=compose_tile_size,
-                    stock_tile_hash=stock_tile_hash,
+                    stock_tiles_hash=stock_tile_hash,
                     status=MosaicImage.STATUS_COMPOSING,
                 )
 
@@ -420,14 +420,16 @@ class Generation(Timestampable):
             if accounted_for_tiles != total_stock_tiles:
                 raise ValueError("Not all tiles matched")
             for group in previous_generation.groups.filter(child__isnull=True):
-                if group.stock_tiles.exists():
+                if group.stock_tiles.count() > 15:
                     center = group.get_actual_center()
+                    parent = group
                 else:
                     center = StockImageTile.objects.filter(
                         tile_size=20,
                     ).order_by('?')[0].tile_data
+                    parent = None
                 self.groups.create(
-                    parent=group,
+                    parent=parent,
                     center=center,
                 )
         else:
@@ -462,22 +464,28 @@ class Generation(Timestampable):
             match_threshold=0,
         )
 
-        tile_qs = StockImageTile.objects.exclude(
+        tile_qs = tuple(StockImageTile.objects.exclude(
             groups__generation=self,
         ).filter(
             tile_size=20,
-        ).values_list('pk', 'tile_data')
+        ).values_list('pk', 'tile_data'))
 
+        instances = []
         for tile_pk, tile_data in tile_qs:
             match_data = matcher((
                 (tile_pk, cast_image_data_to_numpy_array(tile_data)),
             ))
             stock_tile_pk, group_pk, difference = match_data[0]
-            TileGroup.objects.create(
+            instances.append(TileGroup(
                 stockimagetile_id=stock_tile_pk,
                 group_id=group_pk,
                 difference=difference,
-            )
+            ))
+            if len(instances) > 500:
+                TileGroup.objects.bulk_create(instances)
+                instances = []
+        if len(instances):
+            TileGroup.objects.bulk_create(instances)
 
     class Meta:
         unique_together = (
@@ -487,7 +495,7 @@ class Generation(Timestampable):
 
 
 class TileGroup(models.Model):
-    group = models.ForeignKey('Group')
+    group = models.ForeignKey('Group', related_name='tile_matches')
     stockimagetile = models.ForeignKey('StockImageTile')
     difference = models.PositiveIntegerField()
 
@@ -517,3 +525,7 @@ class Group(Timestampable):
             cast_image_data_to_numpy_array(tile_data)
             for tile_data in self.stock_tiles.values_list('tile_data', flat=True)
         )), axis=0))
+
+    @property
+    def differences(self):
+        return numpy.array(tuple(self.tile_matches.values_list('difference', flat=True)))

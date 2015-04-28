@@ -32,11 +32,14 @@ class BaseInMemoryDataBackend(BaseStockDataBackend):
     """
     Fully loads the stock data into memory.
     """
-    def __init__(self, chunk_size=None):
+    def __init__(self, chunk_size=None, stock_data=None):
         if chunk_size is None:
             chunk_size = DB_CHUNK_SIZE
         self.chunk_size = chunk_size
-        self._stock_data = []
+
+        if stock_data is None:
+            stock_data = []
+        self._stock_data = stock_data
 
     def __iter__(self):
         if isinstance(self._stock_data, tuple):

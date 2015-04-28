@@ -2,6 +2,9 @@ import uuid
 import logging
 import operator
 import itertools
+import random
+
+import excavator
 
 from contexttimer import Timer
 
@@ -85,7 +88,7 @@ def create_source_image_tiles(source_image_pk):
     queue_source_image_tiles_for_matching()
 
 
-MATCH_BATCH_SIZE = 100
+MATCH_BATCH_SIZE = excavator.env_int('SOURCE_TILE_BATCH_SIZE', default=40)
 
 
 @periodic_task(crontab(minute='*/5'))
@@ -114,7 +117,8 @@ def queue_source_image_tiles_for_matching():
 
     for _, tile_pks_group in itertools.groupby(tile_data, key_fn):
         # extract the tile pks
-        tile_pks = zip(*tile_pks_group)[1]
+        tile_pks = list(zip(*tile_pks_group)[1])
+        random.shuffle(tile_pks)
 
         for i in range(0, len(tile_pks), MATCH_BATCH_SIZE):
             match_souce_image_tiles(tile_pks[i:i + MATCH_BATCH_SIZE])
