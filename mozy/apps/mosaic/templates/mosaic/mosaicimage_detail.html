@@ -1,4 +1,6 @@
 {% extends 'layout_wide.html' %}
+{% load thumbnail %}
+
 
 {% block breadcrumbs %}
     {{ block.super }}
@@ -15,6 +17,7 @@
     <div class="col-sm-6">
         <img src="{{ mosaic_image.mosaic.url }}" class="img-responsive center-block">
     </div>
+    {% comment %}
     {% for tile_row in mosaic_image.tiles_as_rows %}
         <div>
             {% for tile in tile_row %}
@@ -34,4 +37,5 @@
             {% endfor %}
         </div>
     {% endfor %}
+    {% endcomment %}
 {% endblock %}

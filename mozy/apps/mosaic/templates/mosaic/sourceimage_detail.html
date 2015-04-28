@@ -10,9 +10,12 @@
 
 {% block content %}
     <div class="col-sm-5">
+        {% comment %}
         {% thumbnail source_image.original "600" as im %}
             <img src="{{ im.url }}" class="img-responsive center-block">
         {% endthumbnail %}
+        {% endcomment %}
+            <img src="{{ source_image.original.url }}" class="img-responsive center-block">
     </div>
     <div class="col-sm-7">
         <div>
@@ -32,11 +35,18 @@
                 <div class="media">
                     <div class="media-left">
                         <a href="{% url 'mosaicimage-detail' pk=mosaic_image.pk %}">
+                            {% comment %}
                             {% thumbnail mosaic_image.mosaic "64x64" as im %}
                                 <img src="{{ im.url }}" class="media-object">
                             {% empty %}
                                 <img src="{% static 'img/no-mosaic.jpg' %}" class="media-object">
                             {% endthumbnail %}
+                            {% endcomment %}
+                            {% if mosaic_image.mosaic %}
+                                <img src="{{ mosaic_image.mosaic.url }}" class="media-object">
+                            {% else %}
+                                <img src="{% static 'img/no-mosaic.jpg' %}" class="media-object">
+                            {% endif %}
                         </a>
                     </div>
                     <div class="media-body">
@@ -46,11 +56,18 @@
             {% empty %}
                 <div class="media">
                     <div class="media-left">
+                        {% comment %}
                         {% thumbnail normalized_source_image.image "64x64" as im %}
                             <img src="{{ im.url }}" class="media-object">
                         {% empty %}
                             <img src="{% static 'img/no-mosaic.jpg' %}" class="media-object">
                         {% endthumbnail %}
+                        {% endcomment %}
+                        {% if normalized_source_image.image %}
+                            <img src="{{ normalized_source_image.image.url }}" class="media-object">
+                        {% else %}
+                            <img src="{% static 'img/no-mosaic.jpg' %}" class="media-object">
+                        {% endif %}
                     </div>
                     <div class="media-body">
                         <h4 class="media-heading">Mosaic Generating</h4>
