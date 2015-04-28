@@ -174,7 +174,8 @@ class SourceImageTile(Timestampable):
         (STATUS_MATCHING, 'Matching'),
         (STATUS_MATCHED, 'Matched'),
     )
-    status = models.CharField(max_length=50, choices=STATUS_CHOICES)
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES,
+                              default=STATUS_PENDING)
 
     stock_tile_match = models.ForeignKey(
         'NormalizedStockImage', null=True, on_delete=models.SET_NULL,
@@ -235,7 +236,8 @@ class MosaicImage(Timestampable):
         (STATUS_COMPOSING, 'Composing'),
         (STATUS_COMPLETE, 'Complete'),
     )
-    status = models.CharField(max_length=50, choices=STATUS_CHOICES)
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES,
+                              default=STATUS_PENDING)
     stock_tiles_hash = models.CharField(max_length=255)
 
     class Meta:
