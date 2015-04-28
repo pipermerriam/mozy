@@ -5,6 +5,8 @@ import functools
 
 import excavator
 
+from django.utils.functional import SimpleLazyObject
+
 from mozy.apps.mosaic.models import (
     StockImageTile,
     Generation,
@@ -110,17 +112,23 @@ def find_tile_matches(tile_data_array, group_data, exclusions,
 K_MEANS_GENERATION_ID = excavator.env_int('K_MEANS_GENERATION_ID', 37)
 
 
+def get_group_data():
+    return InMemoryGroupDataBackend(
+        generation=Generation.objects.get(pk=K_MEANS_GENERATION_ID)
+    )
+
+GROUP_DATA = SimpleLazyObject(get_group_data)
+
+
 def KMeansTileMatcher(source_image):
     # Used to determine if a tile has already been used.
     exclusions = StockTileExclusions(source_image)
     # Source for the stock data that will be matched against.
-    group_data = InMemoryGroupDataBackend(
-        generation=Generation.objects.get(pk=K_MEANS_GENERATION_ID)
-    )
+    global GROUP_DATA
 
     return functools.partial(
         find_tile_matches,
-        group_data=group_data,
+        group_data=GROUP_DATA,
         exclusions=exclusions,
         compare_fn=measure_diff_similarity,
     )

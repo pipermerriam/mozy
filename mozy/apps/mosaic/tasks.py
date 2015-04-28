@@ -88,7 +88,7 @@ def create_source_image_tiles(source_image_pk):
     queue_source_image_tiles_for_matching()
 
 
-MATCH_BATCH_SIZE = excavator.env_int('SOURCE_TILE_BATCH_SIZE', default=40)
+MATCH_BATCH_SIZE = excavator.env_int('MOSAIC_BATCH_SIZE', default=40)
 
 
 @periodic_task(crontab(minute='*/5'))
