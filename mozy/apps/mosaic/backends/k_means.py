@@ -119,6 +119,7 @@ K_MEANS_GENERATION_ID = excavator.env_int('K_MEANS_GENERATION_ID', default=37)
 
 
 def get_group_data():
+    logger.info("Loading Group Data")
     with Timer() as timer:
         generation = Generation.objects.get(pk=K_MEANS_GENERATION_ID)
         return tuple(generation.groups.order_by(
