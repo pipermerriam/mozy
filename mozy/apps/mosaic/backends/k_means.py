@@ -109,13 +109,15 @@ def find_tile_matches(tile_data_array, group_data, exclusions,
     return zip(*zip(*itertools.chain.from_iterable(tile_match_data_array)))
 
 
-K_MEANS_GENERATION_ID = excavator.env_int('K_MEANS_GENERATION_ID', 37)
+K_MEANS_GENERATION_ID = excavator.env_int('K_MEANS_GENERATION_ID', default=37)
 
 
 def get_group_data():
-    return InMemoryGroupDataBackend(
-        generation=Generation.objects.get(pk=K_MEANS_GENERATION_ID)
-    )
+    generation = Generation.objects.get(pk=K_MEANS_GENERATION_ID)
+    return tuple(generation.groups.order_by(
+        'pk',
+    ).values_list('pk', 'center'))
+
 
 GROUP_DATA = SimpleLazyObject(get_group_data)
 
@@ -128,7 +130,7 @@ def KMeansTileMatcher(source_image):
 
     return functools.partial(
         find_tile_matches,
-        group_data=GROUP_DATA,
+        group_data=InMemoryGroupDataBackend(generation=Generation.objects.get(pk=K_MEANS_GENERATION_ID)),
         exclusions=exclusions,
         compare_fn=measure_diff_similarity,
     )
