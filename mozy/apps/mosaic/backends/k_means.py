@@ -130,7 +130,7 @@ def KMeansTileMatcher(source_image):
 
     return functools.partial(
         find_tile_matches,
-        group_data=InMemoryGroupDataBackend(generation=Generation.objects.get(pk=K_MEANS_GENERATION_ID)),
+        group_data=GROUP_DATA,
         exclusions=exclusions,
         compare_fn=measure_diff_similarity,
     )
