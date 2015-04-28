@@ -155,7 +155,7 @@ def match_souce_image_tiles(source_image_tile_pks):
                 ).update(
                     stock_tile_match_id=stock_id,
                     stock_tile_match_difference=match_similarity,
-                    status=StockImageTile.STATUS_MATCHED,
+                    status=SourceImageTile.STATUS_MATCHED,
                 )
             logger.info(
                 "Matched tile:%s with stock_image:%s - %s",
