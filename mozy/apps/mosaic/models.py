@@ -30,10 +30,9 @@ from mozy.apps.mosaic.utils import (
 class SourceImage(Timestampable):
     original = models.ImageField(upload_to=uuid_upload_to)
 
-    def create_normalize_image(self, tile_size, **kwargs):
+    def create_normalize_image(self, **kwargs):
         normalized_image = NormalizedSourceImage(
             source_image=self,
-            tile_size=tile_size,
             **kwargs
         )
         if self.original.file.closed:
@@ -56,7 +55,10 @@ class NormalizedSourceImage(Timestampable):
     TILE_SIZE_CHOICES = (
         (20, '20 pixels'),
     )
-    tile_size = models.PositiveSmallIntegerField(choices=TILE_SIZE_CHOICES)
+    tile_size = models.PositiveSmallIntegerField(
+        choices=TILE_SIZE_CHOICES,
+        default=20,
+    )
 
     def tiles_as_rows(self):
         key = operator.attrgetter('upper_left_y')

@@ -4,17 +4,14 @@
 
 {% block breadcrumbs %}
     {{ block.super }}
-    <li><a href="{% url 'sourceimage-list' %}">Images</a></li>
-    <li><a href="{% url 'sourceimage-detail' pk=mosaic_image.image.source_image_id %}">#{{ mosaic_image.image.source_image_id }}</a></li>
-    <li>Mosaic #{{ normalized_source_image.pk }}</li>
+    <li><a href="{% url 'image-list' %}">Images</a></li>
+    <li><a href="{% url 'image-detail' pk=mosaic_image.image.source_image_id %}">#{{ mosaic_image.image.source_image_id }}</a></li>
+    <li>Mosaic #{{ mosaic_image.pk }}</li>
 {% endblock %}
 
 
 {% block content %}
-    <div class="col-sm-6">
-        <img src="{{ mosaic_image.image.image.url }}" class="img-responsive center-block">
-    </div>
-    <div class="col-sm-6">
+    <div class="col-sm-12">
         <img src="{{ mosaic_image.mosaic.url }}" class="img-responsive center-block">
     </div>
     {% comment %}

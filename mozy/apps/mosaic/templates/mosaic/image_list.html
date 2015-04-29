@@ -12,10 +12,10 @@
     <h1>
         Images
         <p class="pull-right">
-            <small><a href="{% url 'sourceimage-create' %}" class="btn btn-primary">Upload new image</a></small>
+            <small><a href="{% url 'image-create' %}" class="btn btn-primary">Upload new image</a></small>
         </p>
     </h1>
-            {% for source_image in page_obj %}
+            {% for image in images %}
                 {% if forloop.counter|divisibleby:"4" %}
                     <div class="container">
                         <div class="row">
@@ -23,13 +23,13 @@
                 <div class="col-sm-3">
                     {% comment %}
                     {% thumbnail source_image.original "256" as im %}
-                    <a href="{% url 'sourceimage-detail' pk=source_image.pk %}">
+                    <a href="{% url 'image-detail' pk=source_image.pk %}">
                         <img src="{{ im.url }}" class="img-responsive img-thumbnail">
                     </a>
                     {% endthumbnail %}
                     {% endcomment %}
-                    <a href="{% url 'sourceimage-detail' pk=source_image.pk %}">
-                        <img src="{{ source_image.original.url }}" class="img-responsive img-thumbnail">
+                    <a href="{% url 'image-detail' pk=image.pk %}">
+                        <img src="{{ image.original.url }}" class="img-responsive img-thumbnail">
                     </a>
                 </div>
                 {% if forloop.counter|divisibleby:"4" %}

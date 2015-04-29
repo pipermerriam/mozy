@@ -14,7 +14,7 @@ urlpatterns = patterns(
         name="site-index",
     ),
 
-    url(r'^mosaic/', include('mozy.apps.mosaic.urls')),
+    url(r'^', include('mozy.apps.mosaic.urls')),
 )
 
 

@@ -1,7 +1,3 @@
-from django.shortcuts import (
-    redirect,
-    get_object_or_404,
-)
 from django.core.urlresolvers import (
     reverse,
 )
@@ -23,64 +19,38 @@ from mozy.apps.mosaic.models import (
 )
 from mozy.apps.mosaic.forms import (
     SourceImageForm,
-    NormalizedSourceImageForm,
 )
 from mozy.apps.mosaic.tables import (
     StockImageTable,
 )
 
 
-class SourceImageListView(ListView):
-    template_name = 'mosaic/sourceimage_list.html'
-    model = SourceImage
+class NormalizedSourceImageListView(ListView):
+    template_name = 'mosaic/image_list.html'
+    model = NormalizedSourceImage
     form_class = SourceImageForm
-    context_object_name = 'source_images'
+    context_object_name = 'images'
     paginate_by = 36
 
 
 class SourceImageCreateView(CreateView):
-    template_name = 'mosaic/sourceimage_create.html'
+    template_name = 'mosaic/image_create.html'
     model = SourceImage
     form_class = SourceImageForm
 
     def get_success_url(self):
-        return reverse('sourceimage-detail', kwargs={'pk': self.object.pk})
+        return reverse('image-detail', kwargs={'pk': self.object.pk})
 
 
-class SourceImageDetailView(DetailView):
-    template_name = 'mosaic/sourceimage_detail.html'
-    model = SourceImage
-    context_object_name = 'source_image'
-
-
-class NormalizedSourceImageCreateView(CreateView):
+class NormalizedSourceImageDetailView(DetailView):
+    template_name = 'mosaic/image_detail.html'
     model = NormalizedSourceImage
-    template_name = 'mosaic/normalizedsourceimage_create.html'
-    form_class = NormalizedSourceImageForm
-
-    def get_source_image(self):
-        return get_object_or_404(SourceImage, **self.kwargs)
-
-    def get_context_data(self, **kwargs):
-        context = super(NormalizedSourceImageCreateView, self).get_context_data(**kwargs)
-        context['source_image'] = self.get_source_image()
-        return context
-
-    def form_valid(self, form):
-        source_image = self.get_source_image()
-        instance = source_image.create_normalize_image(**form.cleaned_data)
-        return redirect(reverse('normalizedsourceimage-detail', kwargs={'pk': instance.pk}))
-
-
-class MosaicImageCreateView(CreateView):
-    model = MosaicImage
-    template_name = 'mosaic/mosaicimage_create.html'
-    context_object_name = 'mosaic_image'
+    context_object_name = 'image'
 
 
 class MosaicImageDetailView(DetailView):
     model = MosaicImage
-    template_name = 'mosaic/mosaicimage_detail.html'
+    template_name = 'mosaic/mosaic_detail.html'
     context_object_name = 'mosaic_image'
 
 

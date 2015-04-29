@@ -1,0 +1,64 @@
+{% extends 'layout_wide.html' %}
+{% load static %}
+{% load thumbnail %}
+
+{% block breadcrumbs %}
+    {{ block.super }}
+    <li><a href="{% url 'image-list' %}">Images</a></li>
+    <li>#{{ image.pk }}</li>
+{% endblock %}
+
+{% block content %}
+    <div class="col-sm-5">
+        {% comment %}
+        {% thumbnail image.original "600" as im %}
+            <img src="{{ im.url }}" class="img-responsive center-block">
+        {% endthumbnail %}
+        {% endcomment %}
+            <img src="{{ image.original.url }}" class="img-responsive center-block">
+    </div>
+    <div class="col-sm-7">
+        <div>
+        </div>
+        <h2>Mosaics</h2>
+        {% for mosaic_image in image.mosaic_images.all %}
+            <div class="media">
+                <div class="media-left">
+                    <a href="{% url 'mosaicimage-detail' pk=mosaic_image.pk %}">
+                        {% comment %}
+                        {% thumbnail mosaic_image.mosaic "64x64" as im %}
+                            <img src="{{ im.url }}" class="media-object">
+                        {% empty %}
+                            <img src="{% static 'img/no-mosaic.jpg' %}" class="media-object">
+                        {% endthumbnail %}
+                        {% endcomment %}
+                        {% if mosaic_image.mosaic %}
+                            <img src="{{ mosaic_image.mosaic.url }}" class="media-object">
+                        {% else %}
+                            <img src="{% static 'img/no-mosaic.jpg' %}" class="media-object">
+                        {% endif %}
+                    </a>
+                </div>
+                <div class="media-body">
+                    <h4 class="media-heading"># {{ mosaic_image.pk }}</h4>
+                </div>
+            </div>
+        {% empty %}
+            <div class="media">
+                <div class="media-left">
+                    {% comment %}
+                    {% thumbnail image.image "64x64" as im %}
+                        <img src="{{ im.url }}" class="media-object">
+                    {% empty %}
+                        <img src="{% static 'img/no-mosaic.jpg' %}" class="media-object">
+                    {% endthumbnail %}
+                    {% endcomment %}
+                    <img src="{{ image.image.url }}" class="media-object">
+                </div>
+                <div class="media-body">
+                    <h4 class="media-heading">Mosaic Generating</h4>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}
