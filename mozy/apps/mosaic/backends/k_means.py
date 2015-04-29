@@ -115,7 +115,7 @@ def find_tile_matches(tile_data_array, group_data, exclusions,
     return zip(*zip(*itertools.chain.from_iterable(tile_match_data_array)))
 
 
-K_MEANS_GENERATION_ID = excavator.env_int('K_MEANS_GENERATION_ID', default=37)
+K_MEANS_GENERATION_ID = excavator.env_int('K_MEANS_GENERATION_ID', default=62)
 
 
 def get_group_data():
