@@ -37,9 +37,9 @@ def find_k_means_groups(tile_data_array, group_data,
     best_matches = collections.defaultdict(lambda: SIMILARITY_MAX)
     best_match_ids = {}
 
-    for data, group_id in group_data:
+    for group_id, center in group_data:
         for tile_id, tile_data in tile_data_array:
-            similarity = compare_fn(tile_data, data)
+            similarity = compare_fn(tile_data, center)
             best_match = best_matches[tile_id]
 
             if similarity < best_match:
