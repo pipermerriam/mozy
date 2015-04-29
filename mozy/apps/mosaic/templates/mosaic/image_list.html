@@ -29,7 +29,7 @@
                     {% endthumbnail %}
                     {% endcomment %}
                     <a href="{% url 'image-detail' pk=image.pk %}">
-                        <img src="{{ image.original.url }}" class="img-responsive img-thumbnail">
+                        <img src="{{ image.image.url }}" class="img-responsive img-thumbnail">
                     </a>
                 </div>
                 {% if forloop.counter|divisibleby:"4" %}
