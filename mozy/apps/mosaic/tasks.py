@@ -180,6 +180,13 @@ def match_souce_image_tiles(source_image_tile_pks):
                 "Matched tile:%s with stock_image:%s - %s",
                 tile_pk, stock_id, match_similarity,
             )
+    if updated_count < len(source_image_tile_pks):
+        logger.error(
+            "Not enough matches returned.  Expected %s - Got %s.  pks: %s",
+            len(source_image_tile_pks),
+            updated_count,
+            repr(source_image_tile_pks),
+        )
     logger.info(
         "Took %s to match %s / %s tiles for NormalizedSourceImage: %s",
         timer.elapsed,
