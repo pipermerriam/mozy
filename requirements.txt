@@ -42,12 +42,16 @@ manifesto==0.5
 django-bootstrap3==5.3.1
 colormath==2.1.0
 networkx==1.9.1
-pybloom==1.1
-huey==0.4.7
-redis==2.10.3
 contexttimer==0.3.1
-pika==0.9.14
+pybloom==1.1
+
+# procfile
 honcho==0.6.6
+
+# queueing
+huey==0.4.7
+
+# redis
+redis==2.10.3
 django-redis==4.0.0
 hiredis==0.2.0
-redis==2.10.3
