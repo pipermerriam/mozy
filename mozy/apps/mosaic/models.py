@@ -389,7 +389,7 @@ class Lineage(Timestampable):
             next_index = 0
         return self.generations.create(index=next_index)
 
-    def generate(self):
+    def generate(self, until_generation=None):
         if not self.generations.exists():
             generation = self.create_next_generation()
             print "Created Generation #{0}".format(generation.index)
@@ -403,6 +403,8 @@ class Lineage(Timestampable):
                 print "Created Generation #{0} groups".format(generation.index)
             generation.classify_stock_data()
             print "Finished classifying stock data for generation #{0}".format(generation.index)
+            if until_generation and generation.index >= until_generation:
+                break
             generation = self.create_next_generation()
             print "Created Generation #", generation.index
 
