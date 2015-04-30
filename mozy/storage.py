@@ -2,6 +2,7 @@ from django.contrib.staticfiles.storage import ManifestFilesMixin
 from django.core.cache import cache
 from django.utils.http import urlquote
 from django.conf import settings
+from django.utils.module_loading import import_string
 
 from pipeline.storage import PipelineMixin
 
@@ -12,7 +13,8 @@ from mozy.apps.mosaic.tasks import transfer_local_file_to_remote
 
 def delegated_storage_method(method_name):
     def method(self, name, *args, **kwargs):
-        return getattr(self.get_storage(name), method_name)(name, *args, **kwargs)
+        backend_method = getattr(self.get_storage(name), method_name)
+        return backend_method(name, *args, **kwargs)
     method.__name__ = method_name
     return method
 
@@ -31,10 +33,12 @@ class QueuedStorage(object):
                  local_options=None, remote_options=None,
                  cache_prefix=None):
         # local
+        self._local = None
         self.local_path = local_path or self.local_path
         self.local_options = local_options or self.local_options or {}
 
         # remote
+        self._remote = None
         self.remote_path = remote_path or self.remote_path
         self.remote_options = remote_options or self.remote_options or {}
 
@@ -53,6 +57,18 @@ class QueuedStorage(object):
             return self.remote
         else:
             return self.local
+
+    @property
+    def local(self):
+        if self._local is None:
+            self._local = import_string(self.local_path)(**self.local_options)
+        return self._local
+
+    @property
+    def remote(self):
+        if self._remote is None:
+            self._remote = import_string(self.remote_path)(**self.remote_options)
+        return self._remote
 
     def get_cache_key(self, name):
         """
@@ -110,5 +126,5 @@ class S3PipelineStorage(PipelineMixin, ManifestFilesMixin, StaticStorage):
 
 
 class QueuedDefaultStorage(QueuedStorage):
-    local_storage = 'django.core.files.storage.FileSystemStorage'
-    remote_path = settings.DEFAULT_FILE_STORAGE
+    local_path = 'django.core.files.storage.FileSystemStorage'
+    remote_path = 's3_folder_storage.s3.DefaultStorage'

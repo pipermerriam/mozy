@@ -12,7 +12,9 @@
 
 {% block content %}
     <div class="col-sm-12">
-        <img src="{{ mosaic_image.mosaic.url }}" class="img-responsive center-block">
+        {% thumbnail mosaic_image.mosaic "600" as im %}
+            <img src="{{ im.url }}" class="img-responsive center-block">
+        {% endthumbnail %}
     </div>
     {% comment %}
     {% for tile_row in mosaic_image.tiles_as_rows %}

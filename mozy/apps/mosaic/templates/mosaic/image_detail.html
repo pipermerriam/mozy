@@ -10,12 +10,12 @@
 
 {% block content %}
     <div class="col-sm-5">
-        {% comment %}
-        {% thumbnail image.original "600" as im %}
+        {% thumbnail image.image "600" as im %}
             <img src="{{ im.url }}" class="img-responsive center-block">
         {% endthumbnail %}
-        {% endcomment %}
+        {% comment %}
             <img src="{{ image.image.url }}" class="img-responsive center-block">
+        {% endcomment %}
     </div>
     <div class="col-sm-7">
         <div>
@@ -25,18 +25,18 @@
             <div class="media">
                 <div class="media-left">
                     <a href="{% url 'mosaicimage-detail' pk=mosaic_image.pk %}">
-                        {% comment %}
                         {% thumbnail mosaic_image.mosaic "64x64" as im %}
                             <img src="{{ im.url }}" class="media-object">
                         {% empty %}
                             <img src="{% static 'img/no-mosaic.jpg' %}" class="media-object">
                         {% endthumbnail %}
-                        {% endcomment %}
+                        {% comment %}
                         {% if mosaic_image.mosaic %}
                             <img src="{{ mosaic_image.mosaic.url }}" class="media-object">
                         {% else %}
                             <img src="{% static 'img/no-mosaic.jpg' %}" class="media-object">
                         {% endif %}
+                        {% endcomment %}
                     </a>
                 </div>
                 <div class="media-body">
@@ -46,14 +46,14 @@
         {% empty %}
             <div class="media">
                 <div class="media-left">
-                    {% comment %}
                     {% thumbnail image.image "64x64" as im %}
                         <img src="{{ im.url }}" class="media-object">
                     {% empty %}
                         <img src="{% static 'img/no-mosaic.jpg' %}" class="media-object">
                     {% endthumbnail %}
-                    {% endcomment %}
+                    {% comment %}
                     <img src="{{ image.image.url }}" class="media-object">
+                    {% endcomment %}
                 </div>
                 <div class="media-body">
                     <h4 class="media-heading">Mosaic Generating</h4>
