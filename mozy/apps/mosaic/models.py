@@ -115,6 +115,8 @@ class NormalizedSourceImage(Timestampable):
                 mosaic_image = self.mosaic_images.get(
                     tile_size=compose_tile_size,
                     stock_tiles_hash=stock_tile_hash,
+                ).exclude(
+                    status=MosaicImage.STATUS_COMPLETE,
                 )
                 if not mosaic_image.is_pending and not mosaic_image.is_errored:
                     raise ValueError(
