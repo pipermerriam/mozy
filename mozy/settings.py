@@ -179,6 +179,12 @@ PIPELINE_JS = {
         'source_filenames': (
             "js/jquery.js",
             "js/bootstrap.js",
+            "js/json2.js",
+            "js/underscore.js",
+            "js/backbone.js",
+            "js/backbone.babysitter.js",
+            "js/backbone.wreqr.js",
+            "js/backbone.marionette.js",
         ),
         'output_filename': 'js/base.js',
     },
