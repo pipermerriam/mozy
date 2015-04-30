@@ -21,7 +21,7 @@
                         <div class="row">
                 {% endif %}
                 <div class="col-sm-3">
-                    {% thumbnail source_image.original "256" as im %}
+                    {% thumbnail source_image.image "256" as im %}
                     <a href="{% url 'image-detail' pk=source_image.pk %}">
                         <img src="{{ im.url }}" class="img-responsive img-thumbnail">
                     </a>
