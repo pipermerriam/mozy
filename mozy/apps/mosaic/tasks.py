@@ -147,9 +147,10 @@ def match_souce_image_tiles(source_image_tile_pks):
 
         match_data = matcher(tile_data_array)
 
+        updated_count = 0
         for tile_pk, stock_id, match_similarity in match_data:
             with transaction.atomic():
-                update_count = SourceImageTile.objects.select_for_update(
+                num_updated = SourceImageTile.objects.select_for_update(
                 ).filter(
                     (
                         Q(stock_tile_match_difference__isnull=True) |
@@ -162,7 +163,8 @@ def match_souce_image_tiles(source_image_tile_pks):
                     status=SourceImageTile.STATUS_MATCHED,
                     updated_at=timezone.now(),
                 )
-                if not update_count:
+                updated_count += num_updated
+                if not num_updated:
                     tile = SourceImageTile.objects.get(pk=tile_pk)
                     logger.warning(
                         "Expected to update StockImageTile: %s - Existing "
@@ -179,8 +181,9 @@ def match_souce_image_tiles(source_image_tile_pks):
                 tile_pk, stock_id, match_similarity,
             )
     logger.info(
-        "Took %s to match %s tiles for NormalizedSourceImage: %s",
+        "Took %s to match %s / %s tiles for NormalizedSourceImage: %s",
         timer.elapsed,
+        updated_count,
         len(source_image_tile_pks),
         source_image.pk,
     )
