@@ -86,9 +86,28 @@ DATABASES = {
 DATABASES['default'].setdefault('ATOMIC_REQUESTS', True)
 
 # Cache
-CACHES = {
-    'default': django_cache_url.config(),
-}
+if excavator.env_bool('REDIS_CACHE_ENABLED'):
+    CACHES = {
+        'default': {
+            'BACKEND': excavator.env_string('REDIS_CACHE_BACKEND', default='redis_cache.RedisCache'),
+            'LOCATION': excavator.env_string('REDIS_CACHE_LOCATION'),
+            'OPTIONS': {
+                'DB': excavator.env_int('REDIS_CACHE_DB', default=1),
+                'PASSWORD': excavator.env_string('REDIS_CACHE_PASSWORD'),
+                'PARSER_CLASS': 'redis.connection.HiredisParser',
+                'CONNECTION_POOL_CLASS': 'redis.BlockingConnectionPool',
+                'CONNECTION_POOL_CLASS_KWARGS': {
+                    'max_connections': 50,
+                    'timeout': 20,
+                }
+            },
+        },
+    }
+else:
+    CACHES = {
+        'default': django_cache_url.config(),
+    }
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/dev/topics/i18n/
