@@ -179,6 +179,7 @@ class SourceImageTile(Timestampable):
         (STATUS_MATCHED, 'Matched'),
     )
     status = models.CharField(max_length=50, choices=STATUS_CHOICES,
+                              db_index=True,
                               default=STATUS_PENDING)
 
     stock_tile_match = models.ForeignKey(
@@ -241,8 +242,9 @@ class MosaicImage(Timestampable):
         (STATUS_COMPLETE, 'Complete'),
     )
     status = models.CharField(max_length=50, choices=STATUS_CHOICES,
+                              db_index=True,
                               default=STATUS_PENDING)
-    stock_tiles_hash = models.CharField(max_length=255)
+    stock_tiles_hash = models.CharField(max_length=255, db_index=True)
 
     class Meta:
         unique_together = (

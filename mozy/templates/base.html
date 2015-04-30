@@ -24,6 +24,7 @@
                 <ul class="nav navbar-nav">
                     <li><a href="{% url 'image-create' %}">Upload New Image</a></li>
                     <li><a href="{% url 'image-list' %}">Images</a></li>
+                    <li><p class="navbar-text"><span class="badge">{{ PENDING_TILE_COUNT }} image tiles waiting to be matched.</span></p></li>
                 </ul>
                 {% comment %}
                 <ul class="nav navbar-nav pull-right">
