@@ -160,12 +160,12 @@ def match_souce_image_tiles(source_image_tile_pks):
                     stock_tile_match_difference=match_similarity,
                     status=SourceImageTile.STATUS_MATCHED,
                 )
-            logger.info(
+            logger.debug(
                 "Matched tile:%s with stock_image:%s - %s",
                 tile_pk, stock_id, match_similarity,
             )
     logger.info(
-        "Took %s to compose match %s tiles for NormalizedSourceImage: %s",
+        "Took %s to match %s tiles for NormalizedSourceImage: %s",
         timer.elapsed,
         len(source_image_tile_pks),
         source_image.pk,
@@ -231,7 +231,10 @@ def compose_mosaic_image(mosaic_image_pk):
             )
 
         if not lock_aquired:
-            logger.error("Unable to aquire lock on MosaicImage: %s", mosaic_image_pk)
+            logger.warning(
+                "Unable to aquire lock on MosaicImage: %s",
+                mosaic_image_pk,
+            )
             return
 
         mosaic_image = MosaicImage.objects.get(pk=mosaic_image_pk)
