@@ -159,6 +159,7 @@ def match_souce_image_tiles(source_image_tile_pks):
                     stock_tile_match_id=stock_id,
                     stock_tile_match_difference=match_similarity,
                     status=SourceImageTile.STATUS_MATCHED,
+                    updated_at=timezone.now(),
                 )
             logger.debug(
                 "Matched tile:%s with stock_image:%s - %s",
