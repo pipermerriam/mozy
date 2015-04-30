@@ -239,6 +239,8 @@ def compose_mosaic_image(mosaic_image_pk):
             compose_tile_size=mosaic_image.tile_size,
             mosaic_image=mosaic_image,
         )
+        mosaic_image.status = MosaicImage.STATUS_COMPLETE
+        mosaic_image.save()
     logger.info(
         "Took %s to compose MosaicImage: %s for NormalizedSourceImage: %s",
         timer.elapsed,
