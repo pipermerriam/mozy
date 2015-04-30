@@ -4,29 +4,24 @@
 
 {% block breadcrumbs %}
     {{ block.super }}
-    <li>Images</li>
+    <li>Mosaics</li>
 {% endblock %}
 
 
 {% block content %}
-    <h1>
-        Images
-        <p class="pull-right">
-            <small><a href="{% url 'image-create' %}" class="btn btn-primary">Upload new image</a></small>
-        </p>
-    </h1>
-    {% for image in images %}
+    <h1>Mosaics</h1>
+    {% for mosaic_image in mosaic_images %}
         {% if forloop.counter|divisibleby:"4" %}
             <div class="container">
                 <div class="row">
         {% endif %}
         <div class="col-sm-3">
-            {% thumbnail image.image "256" as im %}
-            <a href="{% url 'image-detail' pk=image.pk %}">
+            {% thumbnail mosaic_image.mosaic "256x256" crop="top" as im %}
+            <a href="{% url 'mosaicimage-detail' pk=mosaic_image.pk %}">
                 <img src="{{ im.url }}" class="img-responsive img-thumbnail">
             </a>
             {% empty %}
-                <img src="img/missing-image.jpg" class="img-responsive img-thumbnail">
+                <img src="img/missing-mosaic.png" class="img-responsive img-thumbnail">
             {% endthumbnail %}
         </div>
         {% if forloop.counter|divisibleby:"4" %}

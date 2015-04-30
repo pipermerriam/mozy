@@ -9,6 +9,10 @@ from mozy.apps.mosaic import views
 urlpatterns = patterns(
     '',
     url(
+        r'^$', views.MosaicImageListView.as_view(),
+        name="mosaicimage-list",
+    ),
+    url(
         r'^images/$', views.NormalizedSourceImageListView.as_view(),
         name="image-list",
     ),

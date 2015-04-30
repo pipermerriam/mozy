@@ -48,6 +48,13 @@ class NormalizedSourceImageDetailView(DetailView):
     context_object_name = 'image'
 
 
+class MosaicImageListView(ListView):
+    model = MosaicImage
+    template_name = 'mosaic/mosaic_details.html'
+    context_object_name = 'mosaic_images'
+    paginate_by = 36
+
+
 class MosaicImageDetailView(DetailView):
     model = MosaicImage
     template_name = 'mosaic/mosaic_detail.html'
