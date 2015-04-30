@@ -21,16 +21,16 @@
                         <div class="row">
                 {% endif %}
                 <div class="col-sm-3">
-                    {% comment %}
                     {% thumbnail source_image.original "256" as im %}
                     <a href="{% url 'image-detail' pk=source_image.pk %}">
                         <img src="{{ im.url }}" class="img-responsive img-thumbnail">
                     </a>
                     {% endthumbnail %}
-                    {% endcomment %}
+                    {% comment %}
                     <a href="{% url 'image-detail' pk=image.pk %}">
                         <img src="{{ image.image.url }}" class="img-responsive img-thumbnail">
                     </a>
+                    {% endcomment %}
                 </div>
                 {% if forloop.counter|divisibleby:"4" %}
                         </div>

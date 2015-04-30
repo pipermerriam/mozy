@@ -10,6 +10,8 @@ from contexttimer import Timer
 
 from PIL import Image
 
+from django.core.cache import cache
+from django.utils.module_loading import import_string
 from django.db.models import Q
 from django.db import (
     transaction,
@@ -18,6 +20,7 @@ from django.db import (
 from django.utils import timezone
 
 from huey.djhuey import (
+    task,
     db_task,
     periodic_task,
     crontab,
@@ -242,3 +245,14 @@ def compose_mosaic_image(mosaic_image_pk):
         mosaic_image_pk,
         mosaic_image.image.pk,
     )
+
+
+@task()
+def transfer_local_file_to_remote(name, cache_key,
+                                  local_path, remote_path,
+                                  local_options, remote_options):
+    local = import_string(local_path)(**local_options)
+    remote = import_string(remote_path)(**remote_options)
+
+    remote.save(name, local.open(name))
+    cache.set(cache_key, True)
