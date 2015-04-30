@@ -54,6 +54,9 @@ class MosaicImageListView(ListView):
     context_object_name = 'mosaic_images'
     paginate_by = 36
 
+    def get_queryset(self):
+        return MosaicImage.objects.filter(status=MosaicImage.STATUS_COMPLETE)
+
 
 class MosaicImageDetailView(DetailView):
     model = MosaicImage
