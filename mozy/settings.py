@@ -92,7 +92,7 @@ if excavator.env_bool('REDIS_CACHE_ENABLED'):
             'BACKEND': excavator.env_string('REDIS_CACHE_BACKEND', default='redis_cache.RedisCache'),
             'LOCATION': excavator.env_string('REDIS_CACHE_LOCATION'),
             'OPTIONS': {
-                'DB': excavator.env_int('REDIS_CACHE_DB', default=1),
+                'DB': excavator.env_string('REDIS_CACHE_DB', default=1),
                 'PASSWORD': excavator.env_string('REDIS_CACHE_PASSWORD'),
                 'PARSER_CLASS': 'redis.connection.HiredisParser',
                 'CONNECTION_POOL_CLASS': 'redis.BlockingConnectionPool',
