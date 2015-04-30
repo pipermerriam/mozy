@@ -125,6 +125,13 @@ class S3PipelineStorage(PipelineMixin, ManifestFilesMixin, StaticStorage):
     pass
 
 
+from s3_folder_storage.s3 import DefaultStorage
+
+
+class S3DefaultStorage(DefaultStorage):
+    preload_metadata = False
+
+
 class QueuedDefaultStorage(QueuedStorage):
     local_path = 'django.core.files.storage.FileSystemStorage'
     remote_path = 's3_folder_storage.s3.DefaultStorage'
