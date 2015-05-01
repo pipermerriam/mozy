@@ -119,9 +119,12 @@ def get_group_data():
     logger.info("Loading Group Data")
     with Timer() as timer:
         generation = Generation.objects.get(pk=K_MEANS_GENERATION_ID)
-        group_data = tuple(generation.groups.order_by(
-            'pk',
-        ).values_list('pk', 'center'))
+        group_data = tuple((
+            (pk, cast_image_data_to_numpy_array(center))
+            for pk, center in generation.groups.order_by(
+                'pk',
+            ).values_list('pk', 'center')
+        ))
     logger.info(
         "Took %s to load group data",
         timer.elapsed,
