@@ -112,11 +112,11 @@ class NormalizedSourceImage(Timestampable):
                 )
         else:
             try:
-                mosaic_image = self.mosaic_images.get(
+                mosaic_image = self.mosaic_images.exclude(
+                    status=MosaicImage.STATUS_COMPLETE,
+                ).get(
                     tile_size=compose_tile_size,
                     stock_tiles_hash=stock_tile_hash,
-                ).exclude(
-                    status=MosaicImage.STATUS_COMPLETE,
                 )
                 if not mosaic_image.is_pending and not mosaic_image.is_errored:
                     raise ValueError(
@@ -430,18 +430,28 @@ class Generation(Timestampable):
             ).count()
             if accounted_for_tiles != total_stock_tiles:
                 raise ValueError("Not all tiles matched")
-            for group in previous_generation.groups.filter(child__isnull=True):
+            num_to_create = self.lineage.k - self.groups.count()
+            groups_needing_children = previous_generation.groups.filter(
+                child__isnull=True,
+            )[:num_to_create]
+            for group in groups_needing_children:
                 if group.stock_tiles.count() > 15:
                     center = group.get_actual_center()
                     parent = group
                 else:
-                    center = StockImageTile.objects.filter(
-                        tile_size=20,
-                    ).order_by('?')[0].tile_data
-                    parent = None
+                    continue
                 self.groups.create(
                     parent=parent,
                     center=center,
+                )
+            num_missing = self.lineage.k - self.groups.count()
+            for _ in range(num_missing):
+                center = StockImageTile.objects.filter(
+                    tile_size=20,
+                ).order_by('?')[0].tile_data
+                self.groups.create(
+                    center=center,
+                    parent=None,
                 )
         else:
             centers = StockImageTile.objects.filter(
