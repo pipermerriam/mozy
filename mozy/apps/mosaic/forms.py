@@ -14,4 +14,4 @@ class SourceImageForm(forms.ModelForm):
 
     def save(self, *args, **kwargs):
         instance = super(SourceImageForm, self).save(*args, **kwargs)
-        return instance.create_normalize_image()
+        return instance.create_normalized_image()

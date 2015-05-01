@@ -30,7 +30,7 @@ from mozy.apps.mosaic.utils import (
 class SourceImage(Timestampable):
     original = models.ImageField(upload_to=uuid_upload_to)
 
-    def create_normalize_image(self, **kwargs):
+    def create_normalized_image(self, **kwargs):
         normalized_image = NormalizedSourceImage(
             source_image=self,
             **kwargs
