@@ -13,7 +13,9 @@
 {% block content %}
     <div class="col-sm-12">
         {% thumbnail mosaic_image.mosaic "600" as im %}
-            <img src="{{ im.url }}" class="img-responsive center-block">
+            <a target="_blank" href="{{ mosaic_image.mosaic.url }}">
+                <img src="{{ im.url }}" class="img-responsive center-block">
+            </a>
         {% endthumbnail %}
     </div>
     {% comment %}

@@ -402,9 +402,10 @@ class Lineage(Timestampable):
             print "Resuming Generation #{0}".format(generation.index)
 
         while True:
-            if not generation.groups.exists():
+            if generation.groups.count() < self.k:
                 generation.create_groups()
                 print "Created Generation #{0} groups".format(generation.index)
+            assert generation.groups.count() == self.k
             generation.classify_stock_data()
             print "Finished classifying stock data for generation #{0}".format(generation.index)
             if until_generation and generation.index >= until_generation:
