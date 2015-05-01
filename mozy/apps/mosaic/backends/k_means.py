@@ -24,9 +24,6 @@ from mozy.apps.mosaic.similarity import (
 from mozy.apps.mosaic.exclusions import (
     StockTileExclusions,
 )
-from mozy.apps.mosaic.stock_data import (
-    InMemoryGroupDataBackend,
-)
 
 
 logger = logging.getLogger(__file__)
@@ -122,13 +119,14 @@ def get_group_data():
     logger.info("Loading Group Data")
     with Timer() as timer:
         generation = Generation.objects.get(pk=K_MEANS_GENERATION_ID)
-        return tuple(generation.groups.order_by(
+        group_data = tuple(generation.groups.order_by(
             'pk',
         ).values_list('pk', 'center'))
     logger.info(
         "Took %s to load group data",
         timer.elapsed,
     )
+    return group_data
 
 
 GROUP_DATA = SimpleLazyObject(get_group_data)
