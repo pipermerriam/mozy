@@ -29,6 +29,10 @@ urlpatterns = patterns(
         name="mosaicimage-detail",
     ),
     url(
+        r'^mosaics/(?P<pk>\d+)/app/$', views.MosaicApplicationView.as_view(),
+        name="mosaicimage-detail-app",
+    ),
+    url(
         r'^stock-images/$', views.StockImageListView.as_view(),
         name="stockimage-list",
     ),

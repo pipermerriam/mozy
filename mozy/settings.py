@@ -178,6 +178,8 @@ PIPELINE_JS = {
     'base': {
         'source_filenames': (
             "js/jquery.js",
+            # "js/require.js",
+            "js/handlebars.js",
             "js/bootstrap.js",
             "js/json2.js",
             "js/underscore.js",
@@ -187,6 +189,17 @@ PIPELINE_JS = {
             "js/backbone.marionette.js",
         ),
         'output_filename': 'js/base.js',
+    },
+    'mosaic': {
+        'source_filenames': (
+            "js/mosaic/templates/**.handlebars",
+            "js/mosaic/models.js",
+            "js/mosaic/collections.js",
+            "js/mosaic/views.js",
+            "js/mosaic/layouts.js",
+            "js/mosaic/app.js",
+        ),
+        'output_filename': 'js/mosaic.js',
     },
     'rollbar': {
         'source_filenames': (

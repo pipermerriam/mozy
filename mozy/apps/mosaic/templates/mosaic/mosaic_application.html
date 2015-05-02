@@ -1,0 +1,30 @@
+{% extends 'layout_wide.html' %}
+
+
+{% block breadcrumbs %}
+    {{ block.super }}
+    <li><a href="{% url 'image-list' %}">Images</a></li>
+    <li><a href="{% url 'image-detail' pk=mosaic_image.image.source_image_id %}">#{{ mosaic_image.image.source_image_id }}</a></li>
+    <li>Mosaic #{{ mosaic_image.pk }} Interactive</li>
+{% endblock %}
+
+
+{% block content %}
+    <div class="col-sm-12">
+        <div class="mosaic-app-{{ mosaic_image.pk }}">
+            <!-- MosaicApplication -->
+        </div>
+    </div>
+{% endblock %}
+ 
+{% block extra_javascript %}
+<script type="text/javascript">
+$(document).ready(function() {
+    var application = new app.MosaicApplication({
+        el: $('.mosaic-app-{{ mosaic_image.pk }}'),
+        mosaicId: {{ mosaic_image.pk }}
+    });
+    application.start();
+});
+</script>
+{% endblock %}

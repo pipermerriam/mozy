@@ -64,6 +64,12 @@ class MosaicImageDetailView(DetailView):
     context_object_name = 'mosaic_image'
 
 
+class MosaicApplicationView(DetailView):
+    model = MosaicImage
+    template_name = 'mosaic/mosaic_application.html'
+    context_object_name = 'mosaic_image'
+
+
 class StockImageListView(SingleTableMixin, ListView):
     model = NormalizedStockImage
     template_name = 'mosaic/stockimage_list.html'
