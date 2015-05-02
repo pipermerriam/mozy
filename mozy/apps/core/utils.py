@@ -1,4 +1,12 @@
+import uuid
 import os
+
+
+def uuid_filename(extension='png'):
+    return "{0}.{1}".format(
+        str(uuid.uuid4()),
+        extension,
+    ),
 
 
 def uuid_upload_to(instance, filename):

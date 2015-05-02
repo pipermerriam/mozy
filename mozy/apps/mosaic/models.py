@@ -1,8 +1,9 @@
+from __future__ import unicode_literals
+
 import numpy
 import itertools
 import os
 import operator
-import uuid
 import hashlib
 import functools
 
@@ -14,8 +15,12 @@ from django.db import (
     transaction,
 )
 from django.utils import timezone
+from django.utils.encoding import python_2_unicode_compatible
 
-from mozy.apps.core.utils import uuid_upload_to
+from mozy.apps.core.utils import (
+    uuid_filename,
+    uuid_upload_to,
+)
 from mozy.apps.core.models import Timestampable
 
 from mozy.apps.mosaic.utils import (
@@ -41,60 +46,67 @@ class SourceImage(Timestampable):
             o_im = Image.open(fp)
             im = normalize_source_image(o_im)
             normalized_image.image.save(
-                "{0}.png".format(str(uuid.uuid4())),
+                uuid_filename(),
                 convert_image_to_django_file(im),
                 save=True,
             )
         return normalized_image
 
 
+SOURCE_IMAGE_TILE_SIZE = 20
+
+
 class NormalizedSourceImage(Timestampable):
     source_image = models.ForeignKey('SourceImage', related_name='normalized_images')
     image = models.ImageField(upload_to=uuid_upload_to)
 
-    TILE_SIZE_CHOICES = (
-        (20, '20 pixels'),
-    )
-    tile_size = models.PositiveSmallIntegerField(
-        choices=TILE_SIZE_CHOICES,
-        default=20,
-    )
-
     def tiles_as_rows(self):
         key = operator.attrgetter('upper_left_y')
-        for _, group_items in itertools.groupby(self.all_tiles.all(), key):
-            yield tuple(group_items)
+        group_data = itertools.groupby(self.tiles.all(), key)
+        return tuple((
+            tuple(group_items) for _, group_items in group_data
+        ))
 
     def get_stock_tile_hash(self):
         """
         Compute a hash that uniquely identifies a mosaic image based on the
         stock tiles that it is composed of.
         """
-        if self.all_tiles.filter(stock_tile_match__isnull=True).exists():
+        if self.tiles.filter(stock_tile_match__isnull=True).exists():
             raise ValueError(
                 "Cannot compute hash for NormalizedSourceImage: {0}.  Some "
                 "tiles not matched".format(self.pk),
             )
         hash_str = ':'.join((
-            str(v) for v in self.all_tiles.order_by('pk').values_list('stock_tile_match', flat=True)
+            str(v) for v in self.tiles.order_by('pk').values_list('stock_tile_match', flat=True)
         ))
         return hashlib.md5(hash_str).hexdigest()
 
     def compose_mosaic(self, compose_tile_size=None, mosaic_image=None):
+        """
+        TODO: This method is toooo long and needs to be cleaned up.
+
+        1. Gather appropriate parameters (compose_tile_size, ...)
+        2. Validate that preconditions are met.
+            - all tiles present
+            - all tiles matched
+            - all matched stock tiles have tile of correct size.
+        3. Compose.
+        """
         if compose_tile_size is None:
             if mosaic_image:
                 compose_tile_size = mosaic_image.tile_size
             else:
-                compose_tile_size = self.tile_size
+                compose_tile_size = DEFAULT_MOSAIC_TILE_SIZE
 
-        if self.all_tiles.filter(stock_tile_match__isnull=True).exists():
+        if self.tiles.filter(stock_tile_match__isnull=True).exists():
             raise ValueError("Cannot compose mosaic until all tiles are matched")
 
-        num_available_tiles = self.all_tiles.filter(
+        num_available_tiles = self.tiles.filter(
             stock_tile_match__tiles__tile_size=compose_tile_size,
         ).distinct().count()
 
-        if self.all_tiles.count() != num_available_tiles:
+        if self.tiles.count() != num_available_tiles:
             raise ValueError(
                 "Cannot compose mosaic.  Not all matched stock images have a "
                 "tile of the right size"
@@ -130,15 +142,15 @@ class NormalizedSourceImage(Timestampable):
                     status=MosaicImage.STATUS_COMPOSING,
                 )
 
-        num_x_tiles = self.image.width / self.tile_size
-        num_y_tiles = self.image.height / self.tile_size
+        num_x_tiles = self.image.width / SOURCE_IMAGE_TILE_SIZE
+        num_y_tiles = self.image.height / SOURCE_IMAGE_TILE_SIZE
 
         size_x = num_x_tiles * compose_tile_size
         size_y = num_y_tiles * compose_tile_size
 
         mosaic_im = Image.new('RGB', (size_x, size_y))
 
-        for tile in self.all_tiles.all():
+        for tile in self.tiles.all():
             stock_tile = tile.stock_tile_match.tiles.get(
                 tile_size=compose_tile_size,
             )
@@ -149,15 +161,16 @@ class NormalizedSourceImage(Timestampable):
                     tile.get_image_box(compose_tile_size),
                 )
         mosaic_image.mosaic.save(
-            "{0}.png".format(str(uuid.uuid4())),
+            uuid_filename(),
             convert_image_to_django_file(mosaic_im),
             save=True
         )
         return mosaic_image
 
 
+@python_2_unicode_compatible
 class SourceImageTile(Timestampable):
-    main_image = models.ForeignKey('NormalizedSourceImage', related_name='all_tiles')
+    main_image = models.ForeignKey('NormalizedSourceImage', related_name='tiles')
 
     tile_image = models.ImageField(upload_to=uuid_upload_to)
     tile_data = ArrayField(
@@ -196,42 +209,60 @@ class SourceImageTile(Timestampable):
         )
         ordering = ('upper_left_y', 'upper_left_x')
 
+    def __str__(self):
+        return "x:{0} y:{1}".format(self.x_coord, self.y_coord)
+
     @classmethod
     def get_errored_datetime(cls):
         return timezone.now() - timezone.timedelta(hours=2)
 
     @property
-    def tile_size(self):
-        return self.main_image.tile_size
-
-    @property
-    def lower_right_x(self):
-        return self.upper_left_x + self.main_image.tile_size
-
-    @property
-    def lower_right_y(self):
-        return self.upper_left_y + self.main_image.tile_size
-
-    @property
     def numpy_tile_data(self):
         return cast_image_data_to_numpy_array(self.tile_data)
 
-    def get_image_box(self, tile_size=None):
-        if tile_size is None:
-            tile_size = self.tile_size
+    @property
+    def lower_right_x(self):
+        return self.upper_left_x + SOURCE_IMAGE_TILE_SIZE
+
+    @property
+    def lower_right_y(self):
+        return self.upper_left_y + SOURCE_IMAGE_TILE_SIZE
+
+    @property
+    def x_coord(self):
+        return self.upper_left_x / SOURCE_IMAGE_TILE_SIZE
+
+    @property
+    def y_coord(self):
+        return self.upper_left_y / SOURCE_IMAGE_TILE_SIZE
+
+    def get_image_box(self, tile_size):
         return (
-            (self.upper_left_x / self.tile_size) * tile_size,
-            (self.upper_left_y / self.tile_size) * tile_size,
-            (self.upper_left_x / self.tile_size) * tile_size + tile_size,
-            (self.upper_left_y / self.tile_size) * tile_size + tile_size,
+            self.x_coord * tile_size,
+            self.y_coord * tile_size,
+            self.x_coord * tile_size + tile_size,
+            self.y_coord * tile_size + tile_size,
         )
+
+
+DEFAULT_MOSAIC_TILE_SIZE = 40
+TILE_SIZE_CHOICES = (
+    (20, '20 pixels'),
+    (40, '40 pixels'),
+    (60, '60 pixels'),
+    (80, '80 pixels'),
+)
 
 
 class MosaicImage(Timestampable):
     image = models.ForeignKey('NormalizedSourceImage', related_name='mosaic_images')
 
     mosaic = models.ImageField(upload_to=uuid_upload_to, null=True)
-    tile_size = models.PositiveSmallIntegerField()
+
+    TILE_SIZE_CHOICES = TILE_SIZE_CHOICES
+    tile_size = models.PositiveSmallIntegerField(
+        choices=TILE_SIZE_CHOICES, default=DEFAULT_MOSAIC_TILE_SIZE,
+    )
 
     STATUS_PENDING = 'pending'
     STATUS_COMPOSING = 'composing'
@@ -296,7 +327,7 @@ class StockImage(Timestampable):
             extension = path.rpartition('.')[2]
             with Image.open(fp) as im:
                 instance.original.save(
-                    "{0}.{1}".format(uuid.uuid4(), extension),
+                    uuid_filename(extension),
                     convert_image_to_django_file(im),
                 )
         return instance
@@ -351,7 +382,7 @@ class NormalizedStockImage(Timestampable):
             # generating mosaics using non-20-sized tiles.
             im = normalize_stock_image(o_im, tile_size=20)
             instance.image.save(
-                "{0}.png".format(str(uuid.uuid4())),
+                uuid_filename(),
                 convert_image_to_django_file(im),
                 save=True,
             )

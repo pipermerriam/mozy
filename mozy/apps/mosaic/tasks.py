@@ -10,8 +10,6 @@ from contexttimer import Timer
 
 from PIL import Image
 
-from django.core.cache import cache
-from django.utils.module_loading import import_string
 from django.db.models import Q
 from django.db import (
     transaction,
@@ -20,13 +18,13 @@ from django.db import (
 from django.utils import timezone
 
 from huey.djhuey import (
-    task,
     db_task,
     periodic_task,
     crontab,
 )
 
 from mozy.apps.mosaic.models import (
+    SOURCE_IMAGE_TILE_SIZE,
     NormalizedSourceImage,
     SourceImageTile,
     MosaicImage,
@@ -54,7 +52,7 @@ def create_source_image_tiles(source_image_pk):
 
     tile_data = decompose_an_image(
         Image.open(source_image.image.file),
-        tile_size=source_image.tile_size,
+        tile_size=SOURCE_IMAGE_TILE_SIZE,
     )
 
     with Timer() as timer:
@@ -133,7 +131,7 @@ def queue_source_image_tiles_for_matching():
 @db_task()
 def match_souce_image_tiles(source_image_tile_pks):
     with Timer() as timer:
-        source_image = NormalizedSourceImage.objects.get(all_tiles__pk=source_image_tile_pks[0])
+        source_image = NormalizedSourceImage.objects.get(tiles__pk=source_image_tile_pks[0])
 
         matcher = get_mosaic_backend()(source_image)
 
@@ -206,7 +204,7 @@ def create_pending_mosaics():
     source_images_ready_for_composition = NormalizedSourceImage.objects.filter(
         mosaic_images__isnull=True,
     ).exclude(
-        all_tiles__stock_tile_match__isnull=True,
+        tiles__stock_tile_match__isnull=True,
     ).distinct()
     for source_image in source_images_ready_for_composition:
         stock_tiles_hash = source_image.get_stock_tile_hash()

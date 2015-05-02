@@ -30,23 +30,3 @@ def test_size_normalization_on_image_within_range(landscape_image):
         max_height=1000,
     )
     assert result.size == initial_size
-#
-#
-#from hypothesis import given
-#from hypothesis.specifiers import integers_in_range
-#
-#from PIL import Image
-#
-##
-## Neat but slowwwww
-#
-#@given(integers_in_range(400, 800), integers_in_range(800, 800))
-#def test_resizing(max_width, max_height):
-#    img = Image.open('tests/images/test-portrait-1200x1600.jpg')
-#    ratio = img.size[0] / img.size[1]
-#
-#    result = normalize_image_size(img, max_width=max_width, max_height=max_height)
-#    res_ratio = result.size[0] / result.size[1]
-#
-#    diff = abs(res_ratio - ratio)
-#    assert diff < 0.001
