@@ -38,3 +38,17 @@ class SourceTileQuerySet(QuerySet):
                 updated_at__lte=timeout,
             )
         )
+
+
+class NormalizedSourceImageQuerySet(QuerySet):
+    def ready_for_mosaic(self):
+        """
+        - has no mosaic
+          all tiles are matched
+          not locked
+        """
+        return self.filter(
+            mosaic_images__isnull=True,
+        ).exclude(
+            tiles__stock_tile_match__isnull=True,
+        ).distinct()

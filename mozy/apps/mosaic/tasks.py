@@ -52,6 +52,8 @@ MATCH_BATCH_SIZE = excavator.env_int('MOSAIC_BATCH_SIZE', default=40)
 
 @periodic_task(crontab(minute='*'))
 def queue_source_image_tiles_for_matching():
+    if not SourceImageTile.objects.unmatched().exists():
+        return
     if SourceImageTile.objects.processing().exists():
         return
 
@@ -140,54 +142,27 @@ def match_souce_image_tiles(tile_pk=None):
     )
 
 
-#@periodic_task(crontab(minute='*/5'))
-#def create_pending_mosaics():
-#    """
-#    Look for any NormalizedSourceImage instances that are ready for mosaic
-#    composition and create a pending mosaic image as well as triggering a task
-#    to compose it.
-#    """
-#    source_images_ready_for_composition = NormalizedSourceImage.objects.filter(
-#        mosaic_images__isnull=True,
-#    ).exclude(
-#        tiles__stock_tile_match__isnull=True,
-#    ).distinct()
-#    for source_image in source_images_ready_for_composition:
-#        stock_tiles_hash = source_image.get_stock_tile_hash()
-#        source_image.mosaic_images.create(
-#            tile_size=40,
-#            stock_tiles_hash=stock_tiles_hash,
-#            status=MosaicImage.STATUS_PENDING,
-#        )
-#
-#
-#@periodic_task(crontab(minute='*/5'))
-#def queue_mosaic_images_for_composition():
-#    """
-#    Search for any mosaic images that are pending or have errored during
-#    composition.
-#    """
-#    mosaic_images_to_queue = MosaicImage.objects.filter(
-#        Q(status=MosaicImage.STATUS_PENDING) |
-#        Q(
-#            status=MosaicImage.STATUS_COMPOSING,
-#            updated_at__lte=MosaicImage.get_errored_datetime(),
-#        )
-#    ).distinct()
-#
-#    mosaic_image_pks = tuple(mosaic_images_to_queue.values_list('pk', flat=True))
-#
-#    with transaction.atomic():
-#        mosaic_images_to_queue.select_for_update().update(
-#            status=MosaicImage.STATUS_PENDING,
-#            updated_at=timezone.now(),
-#        )
-#    for mosaic_image_pk in mosaic_image_pks:
-#        compose_mosaic_image(mosaic_image_pk)
+@periodic_task(crontab(minute='*'))
+def queue_mosaic_images_for_composition():
+    """
+    Search for any mosaic images that are pending or have errored during
+    composition.
+    """
+    if not NormalizedSourceImage.objects.ready_for_mosaic().exists():
+        return
+    if NormalizedSourceImage.objects.composing().exists():
+        return
+
+    for _ in range(2):
+        compose_mosaic_image()
 
 
 @db_task()
-def compose_mosaic_image(mosaic_image_pk):
+def compose_mosaic_image():
+    source_image = NormalizedSourceImage.objects.ready_for_mosaic().first()
+
+    # acquire a lock
+
     with Timer() as timer:
         with transaction.atomic():
             lock_aquired = MosaicImage.objects.select_for_update().filter(
