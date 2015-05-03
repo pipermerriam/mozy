@@ -1,4 +1,4 @@
-from mozy.apps.mosaic.utils import (
+from mozy.apps.mosaic.normalization import (
     normalize_image_dimensions,
 )
 

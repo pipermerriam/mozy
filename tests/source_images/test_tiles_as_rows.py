@@ -4,14 +4,14 @@ def test_tiles_as_rows(models):
     )
     # 3 rows, 2 columns
     # ROW #1
-    tile_0_0 = n_im.tiles.create(upper_left_x=0, upper_left_y=0, tile_data=[[[1]]])
-    tile_0_1 = n_im.tiles.create(upper_left_x=20, upper_left_y=0, tile_data=[[[1]]])
+    tile_0_0 = n_im.tiles.create(x_coord=0, y_coord=0, tile_data=[[[1]]])
+    tile_0_1 = n_im.tiles.create(x_coord=1, y_coord=0, tile_data=[[[1]]])
     # ROW #2
-    tile_1_0 = n_im.tiles.create(upper_left_x=0, upper_left_y=20, tile_data=[[[1]]])
-    tile_1_1 = n_im.tiles.create(upper_left_x=20, upper_left_y=20, tile_data=[[[1]]])
+    tile_1_0 = n_im.tiles.create(x_coord=0, y_coord=1, tile_data=[[[1]]])
+    tile_1_1 = n_im.tiles.create(x_coord=1, y_coord=1, tile_data=[[[1]]])
     # ROW #3
-    tile_2_0 = n_im.tiles.create(upper_left_x=0, upper_left_y=30, tile_data=[[[1]]])
-    tile_2_1 = n_im.tiles.create(upper_left_x=20, upper_left_y=30, tile_data=[[[1]]])
+    tile_2_0 = n_im.tiles.create(x_coord=0, y_coord=2, tile_data=[[[1]]])
+    tile_2_1 = n_im.tiles.create(x_coord=1, y_coord=2, tile_data=[[[1]]])
 
     tiles_as_rows = n_im.tiles_as_rows()
 

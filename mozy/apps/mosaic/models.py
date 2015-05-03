@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import numpy
 import itertools
 import os
 import operator
@@ -27,6 +26,10 @@ from mozy.apps.mosaic.utils import (
     cast_image_data_to_numpy_array,
     cast_numpy_array_to_python,
     convert_image_to_django_file,
+    decompose_an_image,
+    extract_pixel_data_from_image,
+)
+from mozy.apps.mosaic.normalization import (
     normalize_source_image,
     normalize_stock_image,
 )
@@ -61,7 +64,7 @@ class NormalizedSourceImage(Timestampable):
     image = models.ImageField(upload_to=uuid_upload_to)
 
     def tiles_as_rows(self):
-        key = operator.attrgetter('upper_left_y')
+        key = operator.attrgetter('y_coord')
         group_data = itertools.groupby(self.tiles.all(), key)
         return tuple((
             tuple(group_items) for _, group_items in group_data
@@ -81,6 +84,40 @@ class NormalizedSourceImage(Timestampable):
             str(v) for v in self.tiles.order_by('pk').values_list('stock_tile_match', flat=True)
         ))
         return hashlib.md5(hash_str).hexdigest()
+
+    def create_tiles(self):
+        if self.image.file.closed:
+            self.image.file.open()
+
+        tile_data = decompose_an_image(
+            Image.open(self.image.file),
+            tile_size=SOURCE_IMAGE_TILE_SIZE,
+        )
+
+        for box_coords, tile_image in tile_data.items():
+            x_coord = box_coords[0] / SOURCE_IMAGE_TILE_SIZE
+            y_coord = box_coords[1] / SOURCE_IMAGE_TILE_SIZE
+            already_exists = self.tiles.filter(
+                x_coord=x_coord,
+                y_coord=y_coord,
+            ).exists()
+
+            if already_exists:
+                continue
+
+            tile_data = extract_pixel_data_from_image(tile_image)
+
+            tile, _ = self.tiles.update_or_create(
+                x_coord=x_coord,
+                y_coord=y_coord,
+                defaults={'tile_data': tile_data},
+            )
+            tile.tile_image.save(
+                uuid_filename(),
+                convert_image_to_django_file(tile_image),
+                save=True
+            )
+            tile_image.close()
 
     def compose_mosaic(self, compose_tile_size=None, mosaic_image=None):
         """
@@ -200,14 +237,14 @@ class SourceImageTile(Timestampable):
     )
     stock_tile_match_difference = models.PositiveIntegerField(null=True)
 
-    upper_left_x = models.PositiveIntegerField()
-    upper_left_y = models.PositiveIntegerField()
+    x_coord = models.PositiveSmallIntegerField(null=True)
+    y_coord = models.PositiveSmallIntegerField(null=True)
 
     class Meta:
         unique_together = (
-            ('main_image', 'upper_left_x', 'upper_left_y'),
+            ('main_image', 'x_coord', 'y_coord'),
         )
-        ordering = ('upper_left_y', 'upper_left_x')
+        ordering = ('y_coord', 'x_coord')
 
     def __str__(self):
         return "x:{0} y:{1}".format(self.x_coord, self.y_coord)
@@ -221,20 +258,20 @@ class SourceImageTile(Timestampable):
         return cast_image_data_to_numpy_array(self.tile_data)
 
     @property
+    def upper_left_x(self):
+        return self.x_coord * SOURCE_IMAGE_TILE_SIZE
+
+    @property
+    def upper_left_y(self):
+        return self.y_coord * SOURCE_IMAGE_TILE_SIZE
+
+    @property
     def lower_right_x(self):
         return self.upper_left_x + SOURCE_IMAGE_TILE_SIZE
 
     @property
     def lower_right_y(self):
         return self.upper_left_y + SOURCE_IMAGE_TILE_SIZE
-
-    @property
-    def x_coord(self):
-        return self.upper_left_x / SOURCE_IMAGE_TILE_SIZE
-
-    @property
-    def y_coord(self):
-        return self.upper_left_y / SOURCE_IMAGE_TILE_SIZE
 
     def get_image_box(self, tile_size):
         return (
@@ -573,6 +610,7 @@ class Group(Timestampable):
         return cast_image_data_to_numpy_array(self.center)
 
     def get_actual_center(self):
+        import numpy
         return cast_numpy_array_to_python(numpy.mean(tuple((
             cast_image_data_to_numpy_array(tile_data)
             for tile_data in self.stock_tiles.values_list('tile_data', flat=True)
@@ -580,4 +618,5 @@ class Group(Timestampable):
 
     @property
     def differences(self):
+        import numpy
         return numpy.array(tuple(self.tile_matches.values_list('difference', flat=True)))

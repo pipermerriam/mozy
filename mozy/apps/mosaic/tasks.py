@@ -47,39 +47,9 @@ logger = logging.getLogger(__file__)
 def create_source_image_tiles(source_image_pk):
     source_image = NormalizedSourceImage.objects.get(pk=source_image_pk)
 
-    if source_image.image.file.closed:
-        source_image.image.file.open()
-
-    tile_data = decompose_an_image(
-        Image.open(source_image.image.file),
-        tile_size=SOURCE_IMAGE_TILE_SIZE,
-    )
-
     with Timer() as timer:
-        for box_coords, tile_image in tile_data.items():
-            already_exists = SourceImageTile.objects.filter(
-                main_image=source_image,
-                upper_left_x=box_coords[0],
-                upper_left_y=box_coords[1],
-            ).exists()
-            if already_exists:
-                continue
-            tile = SourceImageTile(
-                main_image=source_image,
-                upper_left_x=box_coords[0],
-                upper_left_y=box_coords[1],
-                tile_data=extract_pixel_data_from_image(tile_image),
-            )
-            try:
-                with transaction.atomic():
-                    tile.tile_image.save(
-                        "{0}.png".format(str(uuid.uuid4())),
-                        convert_image_to_django_file(tile_image),
-                        save=True
-                    )
-            except IntegrityError:
-                pass
-            tile_image.close()
+        source_image.create_tiles()
+
     logger.info(
         "Took %s to create source image tiles for NormalizedSourceImage: %s",
         timer.elapsed,
