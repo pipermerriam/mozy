@@ -280,28 +280,6 @@ class MosaicImage(Timestampable):
             ('image', 'tile_size', 'stock_tiles_hash'),
         )
 
-    @classmethod
-    def get_errored_datetime(cls):
-        return timezone.now() - timezone.timedelta(hours=1)
-
-    @property
-    def is_pending(self):
-        return self.status == self.STATUS_PENDING
-
-    @property
-    def is_composing(self):
-        return self.status == self.STATUS_COMPOSING
-
-    @property
-    def is_complete(self):
-        return self.status == self.STATUS_COMPLETE
-
-    @property
-    def is_errored(self):
-        if self.is_composing and self.updated_at <= self.get_errored_datetime():
-            return True
-        return False
-
 
 #
 # Stock Images
