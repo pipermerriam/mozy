@@ -33,6 +33,9 @@ from mozy.apps.mosaic.normalization import (
     normalize_source_image,
     normalize_stock_image,
 )
+from mozy.apps.mosaic.managers import (
+    SourceTileQuerySet,
+)
 
 
 class SourceImage(Timestampable):
@@ -207,6 +210,8 @@ class NormalizedSourceImage(Timestampable):
 
 @python_2_unicode_compatible
 class SourceImageTile(Timestampable):
+    MAX_TILE_PROCESSING_TIME = SourceTileQuerySet.MAX_TILE_PROCESSING_TIME
+
     main_image = models.ForeignKey('NormalizedSourceImage', related_name='tiles')
 
     tile_image = models.ImageField(upload_to=uuid_upload_to)
@@ -227,6 +232,8 @@ class SourceImageTile(Timestampable):
 
     x_coord = models.PositiveSmallIntegerField(null=True)
     y_coord = models.PositiveSmallIntegerField(null=True)
+
+    objects = SourceTileQuerySet.as_manager()
 
     class Meta:
         unique_together = (

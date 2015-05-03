@@ -1,19 +1,14 @@
 import uuid
 import logging
-import operator
-import itertools
-import random
+import time
 
 import excavator
 
 from contexttimer import Timer
 
-from PIL import Image
-
 from django.db.models import Q
 from django.db import (
     transaction,
-    IntegrityError,
 )
 from django.utils import timezone
 
@@ -24,16 +19,9 @@ from huey.djhuey import (
 )
 
 from mozy.apps.mosaic.models import (
-    SOURCE_IMAGE_TILE_SIZE,
     NormalizedSourceImage,
     SourceImageTile,
     MosaicImage,
-)
-from mozy.apps.mosaic.utils import (
-    decompose_an_image,
-    convert_image_to_django_file,
-    extract_pixel_data_from_image,
-    cast_image_data_to_numpy_array,
 )
 from mozy.apps.mosaic.backends import (
     get_mosaic_backend,
@@ -62,152 +50,140 @@ def create_source_image_tiles(source_image_pk):
 MATCH_BATCH_SIZE = excavator.env_int('MOSAIC_BATCH_SIZE', default=40)
 
 
-@periodic_task(crontab(minute='*/5'))
+@periodic_task(crontab(minute='*'))
 def queue_source_image_tiles_for_matching():
-    tiles_needing_matching = SourceImageTile.objects.filter(
-        Q(status=SourceImageTile.STATUS_PENDING) |
-        Q(
-            status=SourceImageTile.STATUS_QUEUED,
-            updated_at__lte=SourceImageTile.get_errored_datetime(),
-        ) |
-        Q(
-            status=SourceImageTile.STATUS_MATCHING,
-            updated_at__lte=SourceImageTile.get_errored_datetime(),
-        )
-    ).distinct().order_by('main_image', 'pk')
+    if SourceImageTile.objects.processing().exists():
+        return
 
-    tile_data = tuple(tiles_needing_matching.values_list('main_image', 'pk'))
-
-    with transaction.atomic():
-        tiles_needing_matching.select_for_update().update(
-            status=SourceImageTile.STATUS_QUEUED,
-            updated_at=timezone.now(),
-        )
-
-    key_fn = operator.itemgetter(0)
-
-    for _, tile_pks_group in itertools.groupby(tile_data, key_fn):
-        # extract the tile pks
-        tile_pks = list(zip(*tile_pks_group)[1])
-        random.shuffle(tile_pks)
-
-        for i in range(0, len(tile_pks), MATCH_BATCH_SIZE):
-            match_souce_image_tiles(tile_pks[i:i + MATCH_BATCH_SIZE])
-    logger.info(
-        "Enqueued %s SourceImageTile instances for matching", len(tile_data)
-    )
+    logger.info("Queueing tiles for matching")
+    for _ in range(20):
+        match_souce_image_tiles()
 
 
 @db_task()
-def match_souce_image_tiles(source_image_tile_pks):
-    with Timer() as timer:
-        source_image = NormalizedSourceImage.objects.get(tiles__pk=source_image_tile_pks[0])
-
-        matcher = get_mosaic_backend()(source_image)
-
-        tile_data_array = tuple((
-            (tile_pk, cast_image_data_to_numpy_array(tile_data))
-            for tile_pk, tile_data
-            in SourceImageTile.objects.filter(pk__in=source_image_tile_pks).values_list(
-                'pk', 'tile_data',
+def match_souce_image_tiles(tile_pk=None):
+    if tile_pk:
+        tile = SourceImageTile.objects.get(pk=tile_pk)
+        with transaction.atomic():
+            SourceImageTile.objects.select_for_update(
+            ).update(
+                updated_at=timezone.now(),
+                task_lock=uuid.uuid4(),
             )
-        ))
 
-        match_data = matcher(tile_data_array)
+    else:
+        start = time.time()
+        while time.time() < start + 5:
+            tile = SourceImageTile.objects.unmatched().first()
+            if not tile:
+                logger.info("No tiles to match")
 
-        updated_count = 0
-        for tile_pk, stock_id, match_similarity in match_data:
+            # get lock
             with transaction.atomic():
-                num_updated = SourceImageTile.objects.select_for_update(
+                lock_aquired = SourceImageTile.objects.unmatched(
+                ).select_for_update(
                 ).filter(
-                    (
-                        Q(stock_tile_match_difference__isnull=True) |
-                        Q(stock_tile_match_difference__lt=match_similarity)
-                    ),
-                    Q(pk=tile_pk),
+                    pk=tile.pk,
                 ).update(
-                    stock_tile_match_id=stock_id,
-                    stock_tile_match_difference=match_similarity,
-                    status=SourceImageTile.STATUS_MATCHED,
                     updated_at=timezone.now(),
+                    task_lock=uuid.uuid4(),
                 )
-                updated_count += num_updated
-                if not num_updated:
-                    tile = SourceImageTile.objects.get(pk=tile_pk)
-                    logger.warning(
-                        "Expected to update StockImageTile: %s - Existing "
-                        "stock_tile_match_id %s with difference %s.  Replacing "
-                        "with stock_tile_match_id %s and difference %s",
-                        tile.pk,
-                        tile.stock_tile_match_id,
-                        tile.stock_tile_match_difference,
-                        stock_id,
-                        match_similarity,
-                    )
-            logger.debug(
-                "Matched tile:%s with stock_image:%s - %s",
-                tile_pk, stock_id, match_similarity,
+            if lock_aquired:
+                break
+
+    if lock_aquired:
+        logger.info("Acquired lock on tile: %s", tile.pk)
+    else:
+        logger.info("Unable to acquire lock on tile: %s", tile.pk)
+
+    with Timer() as timer:
+        matcher = get_mosaic_backend()(tile.main_image)
+
+        match_data = matcher((
+            (tile.pk, tile.numpy_tile_data),
+        ))
+        if not match_data:
+            logger.warning("Could not find match for tile: %s", tile.pk)
+            return
+
+        _, stock_id, match_similarity = match_data[0]
+
+        with transaction.atomic():
+            success = tile.main_image.tiles.select_for_update(
+            ).filter(
+                (
+                    Q(stock_tile_match_difference__isnull=True) |
+                    Q(stock_tile_match_difference__lt=match_similarity)
+                ),
+                Q(pk=tile.pk),
+            ).update(
+                stock_tile_match_id=stock_id,
+                stock_tile_match_difference=match_similarity,
+                updated_at=timezone.now(),
             )
-    if updated_count < len(source_image_tile_pks):
-        logger.error(
-            "Not enough matches returned.  Expected %s - Got %s.  pks: %s",
-            len(source_image_tile_pks),
-            updated_count,
-            repr(source_image_tile_pks),
-        )
+            if not success:
+                logger.warning(
+                    "Expected to update StockImageTile: %s - Existing "
+                    "stock_tile_match_id %s with difference %s.  Replacing "
+                    "with stock_tile_match_id %s and difference %s",
+                    tile.pk,
+                    tile.stock_tile_match_id,
+                    tile.stock_tile_match_difference,
+                    stock_id,
+                    match_similarity,
+                )
     logger.info(
-        "Took %s to match %s / %s tiles for NormalizedSourceImage: %s",
+        "Took %s to match SourceImageTile: %s for NormalizedSourceImage: %s",
         timer.elapsed,
-        updated_count,
-        len(source_image_tile_pks),
-        source_image.pk,
+        tile.pk,
+        tile.main_image.pk,
     )
 
 
-@periodic_task(crontab(minute='*/5'))
-def create_pending_mosaics():
-    """
-    Look for any NormalizedSourceImage instances that are ready for mosaic
-    composition and create a pending mosaic image as well as triggering a task
-    to compose it.
-    """
-    source_images_ready_for_composition = NormalizedSourceImage.objects.filter(
-        mosaic_images__isnull=True,
-    ).exclude(
-        tiles__stock_tile_match__isnull=True,
-    ).distinct()
-    for source_image in source_images_ready_for_composition:
-        stock_tiles_hash = source_image.get_stock_tile_hash()
-        source_image.mosaic_images.create(
-            tile_size=40,
-            stock_tiles_hash=stock_tiles_hash,
-            status=MosaicImage.STATUS_PENDING,
-        )
-
-
-@periodic_task(crontab(minute='*/5'))
-def queue_mosaic_images_for_composition():
-    """
-    Search for any mosaic images that are pending or have errored during
-    composition.
-    """
-    mosaic_images_to_queue = MosaicImage.objects.filter(
-        Q(status=MosaicImage.STATUS_PENDING) |
-        Q(
-            status=MosaicImage.STATUS_COMPOSING,
-            updated_at__lte=MosaicImage.get_errored_datetime(),
-        )
-    ).distinct()
-
-    mosaic_image_pks = tuple(mosaic_images_to_queue.values_list('pk', flat=True))
-
-    with transaction.atomic():
-        mosaic_images_to_queue.select_for_update().update(
-            status=MosaicImage.STATUS_PENDING,
-            updated_at=timezone.now(),
-        )
-    for mosaic_image_pk in mosaic_image_pks:
-        compose_mosaic_image(mosaic_image_pk)
+#@periodic_task(crontab(minute='*/5'))
+#def create_pending_mosaics():
+#    """
+#    Look for any NormalizedSourceImage instances that are ready for mosaic
+#    composition and create a pending mosaic image as well as triggering a task
+#    to compose it.
+#    """
+#    source_images_ready_for_composition = NormalizedSourceImage.objects.filter(
+#        mosaic_images__isnull=True,
+#    ).exclude(
+#        tiles__stock_tile_match__isnull=True,
+#    ).distinct()
+#    for source_image in source_images_ready_for_composition:
+#        stock_tiles_hash = source_image.get_stock_tile_hash()
+#        source_image.mosaic_images.create(
+#            tile_size=40,
+#            stock_tiles_hash=stock_tiles_hash,
+#            status=MosaicImage.STATUS_PENDING,
+#        )
+#
+#
+#@periodic_task(crontab(minute='*/5'))
+#def queue_mosaic_images_for_composition():
+#    """
+#    Search for any mosaic images that are pending or have errored during
+#    composition.
+#    """
+#    mosaic_images_to_queue = MosaicImage.objects.filter(
+#        Q(status=MosaicImage.STATUS_PENDING) |
+#        Q(
+#            status=MosaicImage.STATUS_COMPOSING,
+#            updated_at__lte=MosaicImage.get_errored_datetime(),
+#        )
+#    ).distinct()
+#
+#    mosaic_image_pks = tuple(mosaic_images_to_queue.values_list('pk', flat=True))
+#
+#    with transaction.atomic():
+#        mosaic_images_to_queue.select_for_update().update(
+#            status=MosaicImage.STATUS_PENDING,
+#            updated_at=timezone.now(),
+#        )
+#    for mosaic_image_pk in mosaic_image_pks:
+#        compose_mosaic_image(mosaic_image_pk)
 
 
 @db_task()
