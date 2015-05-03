@@ -56,7 +56,14 @@ def find_best_group_tiles(tile_data_array, group_stock_data, exclusions,
 
     for data, stock_id in group_stock_data:
         for tile_id, tile_data in tile_data_array:
-            if (tile_id, stock_id) in exclusions:
+            # We cannot start excluding stock tiles until we have a match that
+            # is not in the exclusions list.
+            can_exclude = (
+                tile_id in best_match_ids and
+                (tile_id, best_match_ids[tile_id]) not in exclusions
+            )
+
+            if can_exclude and (tile_id, stock_id) in exclusions:
                 continue
 
             similarity = compare_fn(tile_data, data)

@@ -35,6 +35,7 @@ from mozy.apps.mosaic.normalization import (
 )
 from mozy.apps.mosaic.managers import (
     SourceTileQuerySet,
+    NormalizedSourceImageQuerySet,
 )
 
 
@@ -60,11 +61,16 @@ class SourceImage(Timestampable):
 
 
 SOURCE_IMAGE_TILE_SIZE = 20
+DEFAULT_MOSAIC_TILE_SIZE = 40
 
 
 class NormalizedSourceImage(Timestampable):
     source_image = models.ForeignKey('SourceImage', related_name='normalized_images')
     image = models.ImageField(upload_to=uuid_upload_to)
+
+    task_lock = models.UUIDField(null=True)
+
+    objects = NormalizedSourceImageQuerySet.as_manager()
 
     def tiles_as_rows(self):
         key = operator.attrgetter('y_coord')
@@ -122,7 +128,7 @@ class NormalizedSourceImage(Timestampable):
             )
             tile_image.close()
 
-    def compose_mosaic(self, compose_tile_size=None, mosaic_image=None):
+    def compose_mosaic(self, compose_tile_size=DEFAULT_MOSAIC_TILE_SIZE):
         """
         TODO: This method is toooo long and needs to be cleaned up.
 
@@ -133,12 +139,6 @@ class NormalizedSourceImage(Timestampable):
             - all matched stock tiles have tile of correct size.
         3. Compose.
         """
-        if compose_tile_size is None:
-            if mosaic_image:
-                compose_tile_size = mosaic_image.tile_size
-            else:
-                compose_tile_size = DEFAULT_MOSAIC_TILE_SIZE
-
         if self.tiles.filter(stock_tile_match__isnull=True).exists():
             raise ValueError("Cannot compose mosaic until all tiles are matched")
 
@@ -153,58 +153,36 @@ class NormalizedSourceImage(Timestampable):
             )
 
         stock_tile_hash = self.get_stock_tile_hash()
-        if mosaic_image:
-            if mosaic_image.tile_size != compose_tile_size:
-                raise ValueError(
-                    "Tile size: {0} != Compose size: {1} for "
-                    "NormalizedSourceImage: {2} and MosaicImage: {3}".format(
-                        mosaic_image.tile_size, compose_tile_size,
-                        self.pk, mosaic_image.pk,
-                    )
-                )
-        else:
-            try:
-                mosaic_image = self.mosaic_images.exclude(
-                    status=MosaicImage.STATUS_COMPLETE,
-                ).get(
-                    tile_size=compose_tile_size,
-                    stock_tiles_hash=stock_tile_hash,
-                )
-                if not mosaic_image.is_pending and not mosaic_image.is_errored:
-                    raise ValueError(
-                        "Cannot compose mosaic for NormalizedSourceImage: {0}. "
-                        "Image is neither pending nor is it errored".format(self.pk)
-                    )
-            except MosaicImage.DoesNotExist:
-                mosaic_image = self.mosaic_images.create(
-                    tile_size=compose_tile_size,
-                    stock_tiles_hash=stock_tile_hash,
-                    status=MosaicImage.STATUS_COMPOSING,
-                )
 
-        num_x_tiles = self.image.width / SOURCE_IMAGE_TILE_SIZE
-        num_y_tiles = self.image.height / SOURCE_IMAGE_TILE_SIZE
-
-        size_x = num_x_tiles * compose_tile_size
-        size_y = num_y_tiles * compose_tile_size
-
-        mosaic_im = Image.new('RGB', (size_x, size_y))
-
-        for tile in self.tiles.all():
-            stock_tile = tile.stock_tile_match.tiles.get(
+        with transaction.atomic():
+            mosaic_image, _ = self.mosaic_images.get_or_create(
                 tile_size=compose_tile_size,
+                stock_tiles_hash=stock_tile_hash,
             )
-            with stock_tile.tile_image.file as fp:
-                tile_im = Image.open(fp)
-                mosaic_im.paste(
-                    tile_im,
-                    tile.get_image_box(compose_tile_size),
+
+            num_x_tiles = self.image.width / SOURCE_IMAGE_TILE_SIZE
+            num_y_tiles = self.image.height / SOURCE_IMAGE_TILE_SIZE
+
+            size_x = num_x_tiles * compose_tile_size
+            size_y = num_y_tiles * compose_tile_size
+
+            mosaic_im = Image.new('RGB', (size_x, size_y))
+
+            for tile in self.tiles.all():
+                stock_tile = tile.stock_tile_match.tiles.get(
+                    tile_size=compose_tile_size,
                 )
-        mosaic_image.mosaic.save(
-            uuid_filename(),
-            convert_image_to_django_file(mosaic_im),
-            save=True
-        )
+                with stock_tile.tile_image.file as fp:
+                    tile_im = Image.open(fp)
+                    mosaic_im.paste(
+                        tile_im,
+                        tile.get_image_box(compose_tile_size),
+                    )
+            mosaic_image.mosaic.save(
+                uuid_filename(),
+                convert_image_to_django_file(mosaic_im),
+                save=True
+            )
         return mosaic_image
 
 
@@ -277,7 +255,6 @@ class SourceImageTile(Timestampable):
         )
 
 
-DEFAULT_MOSAIC_TILE_SIZE = 40
 TILE_SIZE_CHOICES = (
     (20, '20 pixels'),
     (40, '40 pixels'),
@@ -289,7 +266,7 @@ TILE_SIZE_CHOICES = (
 class MosaicImage(Timestampable):
     image = models.ForeignKey('NormalizedSourceImage', related_name='mosaic_images')
 
-    mosaic = models.ImageField(upload_to=uuid_upload_to, null=True)
+    mosaic = models.ImageField(upload_to=uuid_upload_to)
 
     TILE_SIZE_CHOICES = TILE_SIZE_CHOICES
     tile_size = models.PositiveSmallIntegerField(

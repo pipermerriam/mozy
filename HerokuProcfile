@@ -1,2 +1,2 @@
 web: gunicorn mozy.wsgi -c mozy/gunicorn.conf -w 3
-worker: django-admin.py run_huey --no-periodic --workers=1
+worker: django-admin.py run_huey --workers=1
