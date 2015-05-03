@@ -1,4 +1,3 @@
-from django.db.models import Q
 from django.core.cache import cache
 
 from mozy.apps.mosaic.models import SourceImageTile
@@ -11,9 +10,7 @@ def tile_metadata(request):
     if value is None:
         value = {
             'PENDING_TILE_COUNT': SourceImageTile.objects.filter(
-                Q(status=SourceImageTile.STATUS_PENDING) |
-                Q(status=SourceImageTile.STATUS_QUEUED) |
-                Q(status=SourceImageTile.STATUS_MATCHING)
+                stock_tile_match__isnull=True,
             ).count()
         }
         cache.set(cache_key, value)
