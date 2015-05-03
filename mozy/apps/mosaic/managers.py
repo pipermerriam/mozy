@@ -15,7 +15,7 @@ class SourceTileQuerySet(QuerySet):
 
     def processing(self):
         return self.filter(
-            stock_tile_match__isnull=False,
+            stock_tile_match__isnull=True,
             task_lock__isnull=False,
             updated_at__gt=self.get_timout(),
         )
