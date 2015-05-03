@@ -218,19 +218,7 @@ class SourceImageTile(Timestampable):
         )
     )
 
-    STATUS_PENDING = 'pending'
-    STATUS_QUEUED = 'queud'
-    STATUS_MATCHING = 'matching'
-    STATUS_MATCHED = 'matched'
-    STATUS_CHOICES = (
-        (STATUS_PENDING, 'Pending'),
-        (STATUS_QUEUED, 'Queued'),
-        (STATUS_MATCHING, 'Matching'),
-        (STATUS_MATCHED, 'Matched'),
-    )
-    status = models.CharField(max_length=50, choices=STATUS_CHOICES,
-                              db_index=True,
-                              default=STATUS_PENDING)
+    task_lock = models.UUIDField(null=True)
 
     stock_tile_match = models.ForeignKey(
         'NormalizedStockImage', null=True, on_delete=models.SET_NULL,
@@ -301,17 +289,6 @@ class MosaicImage(Timestampable):
         choices=TILE_SIZE_CHOICES, default=DEFAULT_MOSAIC_TILE_SIZE,
     )
 
-    STATUS_PENDING = 'pending'
-    STATUS_COMPOSING = 'composing'
-    STATUS_COMPLETE = 'complete'
-    STATUS_CHOICES = (
-        (STATUS_PENDING, 'Pending'),
-        (STATUS_COMPOSING, 'Composing'),
-        (STATUS_COMPLETE, 'Complete'),
-    )
-    status = models.CharField(max_length=50, choices=STATUS_CHOICES,
-                              db_index=True,
-                              default=STATUS_PENDING)
     stock_tiles_hash = models.CharField(max_length=255, db_index=True)
 
     class Meta:
